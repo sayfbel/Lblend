@@ -23,7 +23,7 @@ exports.joinProject = (req, res) => {
 exports.getUserProjects = (req, res) => {
     const { userId } = req.params;
     const query = `
-        SELECT DISTINCT a.*, u.username as owner_name, pm.is_accepted as membership_accepted,
+        SELECT DISTINCT a.*, u.username as owner_name, u.occupation as owner_occupation, pm.is_accepted as membership_accepted,
             (SELECT COUNT(*) FROM branches b WHERE b.project_id = a.id) as branch_count,
             (SELECT COUNT(*) FROM project_members pmem WHERE pmem.announcement_id = a.id AND pmem.is_accepted = 1) as member_count
         FROM announcements a

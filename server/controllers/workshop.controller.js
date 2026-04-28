@@ -1,10 +1,31 @@
 const db = require('../db');
 const { createNotification } = require('./notification.controller');
 
+// Auto-migration: Ensure 'type' column exists in branches table
+db.query("SHOW COLUMNS FROM branches LIKE 'type'", (err, results) => {
+    if (!err && results.length === 0) {
+        console.log("Migrating branches table: adding 'type' column...");
+        db.query("ALTER TABLE branches ADD COLUMN type ENUM('DESIGN', 'DEVELOP') DEFAULT 'DEVELOP'", (err2) => {
+            if (err2) console.error("Auto-migration failed:", err2);
+            else console.log("Migration successful: 'type' column added.");
+        });
+    }
+});
+
 exports.createBranch = (req, res) => {
-    const { project_id, name, user_id } = req.body;
-    db.query("INSERT INTO branches (project_id, name, user_id) VALUES (?, ?, ?)", [project_id, name, user_id], (err, result) => {
-        if (err) return res.status(500).send(err);
+    const { project_id, name, user_id, type } = req.body;
+    db.query("INSERT INTO branches (project_id, name, user_id, type) VALUES (?, ?, ?, ?)", [project_id, name, user_id, type || 'DEVELOP'], (err, result) => {
+        if (err) {
+            console.error("CREATE BRANCH ERROR:", err);
+            // Fallback for missing column
+            if (err.code === 'ER_BAD_FIELD_ERROR') {
+                return db.query("INSERT INTO branches (project_id, name, user_id) VALUES (?, ?, ?)", [project_id, name, user_id], (err2, result2) => {
+                    if (err2) return res.status(500).send(err2);
+                    res.status(201).send({ message: "Branch created (fallback)!", id: result2.insertId });
+                });
+            }
+            return res.status(500).send(err);
+        }
         
         // Notify all team members about the new branch
         db.query("SELECT user_id FROM project_members WHERE announcement_id = ? AND is_accepted = TRUE AND user_id != ?", [project_id, user_id], (err2, members) => {
@@ -22,14 +43,28 @@ exports.createBranch = (req, res) => {
 
 exports.getBranches = (req, res) => {
     const { projectId } = req.params;
-    const query = `
+    const { type } = req.query;
+    
+    let query = `
         SELECT b.*, u.username, COALESCE(u.google_avatar, u.avatar) AS avatar, u.occupation 
         FROM branches b 
         LEFT JOIN users u ON b.user_id = u.id 
         WHERE b.project_id = ?
     `;
-    db.query(query, [projectId], (err, results) => {
-        if (err) return res.status(500).send(err);
+    const params = [projectId];
+
+    if (type) {
+        query += " AND b.type = ?";
+        params.push(type);
+    }
+
+    db.query(query, params, (err, results) => {
+        if (err) {
+            console.error("GET BRANCHES ERROR:", err);
+            // If it's a column missing error, return empty instead of 500 to keep UI alive
+            if (err.code === 'ER_BAD_FIELD_ERROR') return res.status(200).send([]);
+            return res.status(500).send(err);
+        }
         res.status(200).send(results);
     });
 };
@@ -117,5 +152,68 @@ exports.deleteCommit = (req, res) => {
     db.query("DELETE FROM commits WHERE id = ?", [id], (err) => {
         if (err) return res.status(500).send(err);
         res.status(200).send({ message: "Commit deleted!" });
+    });
+};
+
+exports.saveSchema = (req, res) => {
+    const { projectId, positions, connections } = req.body;
+    // positions: { [commitId]: { x, y } }
+    // connections: [{ fromId, fromSide, toId, toSide }]
+
+    db.beginTransaction((err) => {
+        if (err) return res.status(500).send(err);
+
+        // 1. Update positions
+        const updatePromises = Object.keys(positions || {}).map(id => {
+            return new Promise((resolve, reject) => {
+                const pos = positions[id];
+                if (id === 'principal') {
+                    db.query("UPDATE announcements SET pos_x=?, pos_y=? WHERE id=?", [pos.x, pos.y, projectId], (e) => e ? reject(e) : resolve());
+                } else {
+                    db.query("UPDATE commits SET pos_x=?, pos_y=? WHERE id=?", [pos.x, pos.y, id], (e) => e ? reject(e) : resolve());
+                }
+            });
+        });
+
+        // 2. Clear existing connections
+        const clearConnections = new Promise((resolve, reject) => {
+            db.query("DELETE FROM commit_connections WHERE project_id = ?", [projectId], (e) => e ? reject(e) : resolve());
+        });
+
+        Promise.all([...updatePromises, clearConnections])
+            .then(() => {
+                if (connections && connections.length > 0) {
+                    const values = connections.map(c => [projectId, c.fromId, c.fromSide, c.toId, c.toSide]);
+                    db.query("INSERT INTO commit_connections (project_id, from_commit_id, from_side, to_commit_id, to_side) VALUES ?", [values], (e) => {
+                        if (e) return db.rollback(() => { res.status(500).send(e); });
+                        db.commit((err) => {
+                            if (err) return db.rollback(() => { res.status(500).send(err); });
+                            res.status(200).send({ message: "Schema saved!" });
+                        });
+                    });
+                } else {
+                    db.commit((err) => {
+                        if (err) return db.rollback(() => { res.status(500).send(err); });
+                        res.status(200).send({ message: "Schema saved!" });
+                    });
+                }
+            })
+            .catch(err => {
+                db.rollback(() => { res.status(500).send(err); });
+            });
+    });
+};
+
+exports.getSchemaConnections = (req, res) => {
+    const { projectId } = req.params;
+    db.query("SELECT * FROM commit_connections WHERE project_id = ?", [projectId], (err, results) => {
+        if (err) return res.status(500).send(err);
+        const connections = results.map(r => ({
+            fromId: isNaN(r.from_commit_id) ? r.from_commit_id : parseInt(r.from_commit_id),
+            fromSide: r.from_side,
+            toId: isNaN(r.to_commit_id) ? r.to_commit_id : parseInt(r.to_commit_id),
+            toSide: r.to_side
+        }));
+        res.status(200).send(connections);
     });
 };

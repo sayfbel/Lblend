@@ -8,17 +8,7 @@ exports.createAnnouncement = (req, res) => {
         if (err) return res.status(500).send(err);
         const projectId = results.insertId;
 
-        // TACTICAL AUTO-INITIALIZATION: Only for non-GitHub missions or fallbacks
-        if (!github_url || !github_url.includes('github.com')) {
-            db.query("INSERT INTO branches (project_id, name, user_id) VALUES (?, 'main', ?)", 
-            [projectId, user_id], (errBranch, branchRes) => {
-                if (!errBranch) {
-                    const branchId = branchRes.insertId;
-                    db.query("INSERT INTO commits (branch_id, message, user_id) VALUES (?, 'Genesis: Project Initialized', ?)", 
-                    [branchId, user_id]);
-                }
-            });
-        }
+        // Removed auto-initialization of Genesis commit to let users initialize explicitly.
         
         // Notify all other users about the new announcement
         db.query("SELECT id FROM users WHERE id != ?", [user_id], (err2, users) => {

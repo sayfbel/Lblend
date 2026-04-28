@@ -35,8 +35,32 @@ const db = mysql.createConnection({
 });
 
 db.connect((err) => {
-    if (err) console.error('Database connection failed:', err);
-    else console.log('Connected to MySQL Database: ' + process.env.DB_NAME);
+    if (err) {
+        console.error('Database connection failed:', err);
+    } else {
+        console.log('Connected to MySQL Database: ' + process.env.DB_NAME);
+        
+        // Auto-update schema for new features
+        const queries = [
+            "CREATE TABLE IF NOT EXISTS commit_connections (id INT AUTO_INCREMENT PRIMARY KEY, project_id INT NOT NULL, from_commit_id VARCHAR(50) NOT NULL, from_side VARCHAR(10) NOT NULL, to_commit_id VARCHAR(50) NOT NULL, to_side VARCHAR(10) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (project_id) REFERENCES announcements(id) ON DELETE CASCADE);",
+        ];
+        
+        queries.forEach(q => db.query(q, (e) => e && console.error('DB Init Error:', e.message)));
+        
+        // Use separate query for columns since ALTER TABLE IF NOT EXISTS isn't standard in older MySQL
+        db.query("SHOW COLUMNS FROM announcements LIKE 'pos_x'", (err, res) => {
+            if (res && res.length === 0) {
+                db.query("ALTER TABLE announcements ADD COLUMN pos_x FLOAT DEFAULT 0");
+                db.query("ALTER TABLE announcements ADD COLUMN pos_y FLOAT DEFAULT 0");
+            }
+        });
+        db.query("SHOW COLUMNS FROM commits LIKE 'pos_x'", (err, res) => {
+            if (res && res.length === 0) {
+                db.query("ALTER TABLE commits ADD COLUMN pos_x FLOAT DEFAULT 0");
+                db.query("ALTER TABLE commits ADD COLUMN pos_y FLOAT DEFAULT 0");
+            }
+        });
+    }
 });
 
 const transporter = nodemailer.createTransport({
@@ -343,10 +367,51 @@ app.post('/api/workshop/commits', workshopController.createCommit);
 app.get('/api/workshop/commits/:branchId', workshopController.getCommits);
 app.put('/api/workshop/commits/:id', workshopController.updateCommit);
 app.delete('/api/workshop/commits/:id', workshopController.deleteCommit);
+app.post('/api/workshop/schema', workshopController.saveSchema);
+app.get('/api/workshop/schema/:projectId', workshopController.getSchemaConnections);
 
 // GitHub Analysis
 app.get('/api/github/analyze', githubController.analyzeRepo);
 app.post('/api/github/sync', githubController.syncRepo);
+
+// Figma oEmbed Endpoint
+app.post('/api/figma/oembed', async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ error: 'URL is required' });
+        const axios = require('axios');
+        const figmaRes = await axios.get(`https://www.figma.com/api/oembed?url=${encodeURIComponent(url)}`);
+        res.status(200).json(figmaRes.data);
+    } catch (error) {
+        console.error('Figma oEmbed Error:', error.message);
+        res.status(400).json({ error: 'Failed to fetch Figma data. File may be private or invalid.' });
+    }
+});
+
+// Design Platform Metadata Endpoint (Figma, XD, Behance, etc.)
+app.post('/api/design/metadata', async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ error: 'URL is required' });
+        const axios = require('axios');
+        
+        // Use a real browser user-agent to avoid being blocked by Behance/others
+        const xdRes = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
+        const html = xdRes.data;
+        
+        // Extract og:image
+        const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+        const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+        
+        res.status(200).json({
+            thumbnail_url: imageMatch ? imageMatch[1] : null,
+            title: titleMatch ? titleMatch[1] : 'Design Project'
+        });
+    } catch (error) {
+        console.error('Design Metadata Error:', error.message);
+        res.status(400).json({ error: 'Failed to fetch design metadata.' });
+    }
+});
 
 // Intelligence (Communication Hub)
 app.post('/api/intelligence/join', intelligenceController.joinProject);
