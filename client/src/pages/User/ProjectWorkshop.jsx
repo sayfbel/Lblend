@@ -207,10 +207,10 @@ const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal =
                 <div
                     style={{ height: '220px', background: '#f1f5f9', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: commit.file_url || designData ? 'pointer' : 'default' }}
                     onClick={() => {
-                        const urlToOpen = commit.file_url || 
-                            (isFigmaUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?figma\.com\/[^\s]+)/i)?.[0] : 
-                             isXDUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?xd\.adobe\.com\/view\/[^\s]+)/i)?.[0] : 
-                             isBehanceUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?behance\.net\/gallery\/[^\s]+)/i)?.[0] : null);
+                        const urlToOpen = commit.file_url ||
+                            (isFigmaUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?figma\.com\/[^\s]+)/i)?.[0] :
+                                isXDUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?xd\.adobe\.com\/view\/[^\s]+)/i)?.[0] :
+                                    isBehanceUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?behance\.net\/gallery\/[^\s]+)/i)?.[0] : null);
                         if (urlToOpen) window.open(urlToOpen, '_blank');
                     }}
                 >
@@ -512,10 +512,10 @@ const SchemaCanvas = ({ commits, project, connections, activeNode, onNodeClick, 
                         onEdit={(c) => {
                             const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
                             const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
-                            setRenaming({ 
-                                type: 'commit', 
-                                id: c.id, 
-                                value: messageWithoutUrls, 
+                            setRenaming({
+                                type: 'commit',
+                                id: c.id,
+                                value: messageWithoutUrls,
                                 file_url: c.file_url,
                                 attachedLinks: urls.map(url => {
                                     let type = 'link';
@@ -552,7 +552,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
     const [pendingSource, setPendingSource] = useState(null); // { type, label }
     const [pendingUrl, setPendingUrl] = useState('');
     const [hoveredLink, setHoveredLink] = useState(null);
-    
+
     // Edit Modal specific states
     const [editPendingSource, setEditPendingSource] = useState(null);
     const [editPendingUrl, setEditPendingUrl] = useState('');
@@ -798,6 +798,25 @@ const ProjectWorkshop = ({ project, onBack }) => {
                 // Try to find main branch, otherwise pick first
                 const mainBranch = response.data.find(b => b.name.toLowerCase() === 'main');
                 setSelectedBranch(mainBranch || response.data[0]);
+            } else if (workspaceType === 'DESIGNER') {
+                // Auto-create a Project Hub branch for designers if none exists
+                const createRes = await axios.post('http://localhost:5000/api/workshop/branches', {
+                    project_id: project.id,
+                    name: 'Project Hub',
+                    user_id: currentUser.id,
+                    type: 'DESIGN'
+                });
+                const newBranch = {
+                    id: createRes.data.id,
+                    name: 'Project Hub',
+                    project_id: project.id,
+                    user_id: currentUser.id,
+                    type: 'DESIGN',
+                    username: currentUser.username,
+                    avatar: currentUser.avatar
+                };
+                setInternalBranches([newBranch]);
+                setSelectedBranch(newBranch);
             } else {
                 setSelectedBranch(null);
                 setCommits([]);
@@ -862,9 +881,6 @@ const ProjectWorkshop = ({ project, onBack }) => {
                 if (hasDes && !hasDev) setWorkspaceType('DESIGNER');
                 else if (hasDev && !hasDes) setWorkspaceType('DEVELOPER');
                 // if mixed, keep current user's default workspace
-
-                if (hasDes && !hasDev) setViewMode('EXTERNAL');
-                else if (hasDev && !hasDes) setViewMode('INTERNAL');
             } catch (err) { console.error(err); }
         };
         fetchTeamRoles();
@@ -1082,233 +1098,179 @@ const ProjectWorkshop = ({ project, onBack }) => {
                             }}
                             disabled={!isDesignProject && (!project.github_url || analyzing)}
                             style={{
-                                padding: '12px 20px',
-                                borderRadius: '12px',
-                                border: 'none',
+                                padding: '12px 20px', borderRadius: '12px', border: 'none',
                                 background: viewMode === 'EXTERNAL' ? '#fff' : 'transparent',
                                 color: (!isDesignProject && !project.github_url) ? 'var(--text-muted)' : 'var(--secondary)',
-                                fontWeight: '800',
-                                fontSize: '0.7rem',
+                                fontWeight: '800', fontSize: '0.7rem',
                                 cursor: (!isDesignProject && !project.github_url) ? 'not-allowed' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
+                                display: 'flex', alignItems: 'center', gap: '8px',
                                 boxShadow: viewMode === 'EXTERNAL' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
                                 transition: 'all 0.3s',
                                 opacity: (!isDesignProject && !project.github_url) ? 0.4 : 1
                             }}
                         >
-                            {isDesignProject ? (
-                                <Activity size={16} />
-                            ) : (
-                                analyzing ? <RefreshCw size={16} className="animate-spin" /> : <GithubIcon size={16} />
-                            )}
+                            {isDesignProject ? <Activity size={16} /> : (analyzing ? <RefreshCw size={16} className="animate-spin" /> : <GithubIcon size={16} />)}
                             {isDesignProject ? 'ANALYZE SCHEMA' : (githubData ? 'EXTERNAL INTEL' : 'ANALYZE GITHUB')}
                         </button>
                     </div>
                 </div>
             </div>
 
+            {/* WORKSHOP MAIN ENGINE HEADER */}
+            <div style={{ padding: isMobile ? '20px' : '0 40px', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.8rem', fontWeight: '950', color: 'var(--secondary)', letterSpacing: '-2px', lineHeight: '1', textTransform: 'uppercase' }}>
+                    {project.title} <span style={{ color: 'var(--accent)', fontSize: '0.8rem', verticalAlign: 'middle', letterSpacing: '4px', marginLeft: '10px' }}>HUB</span>
+                </h2>
+                <p style={{ marginTop: '10px', color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.75rem', letterSpacing: '1px' }}>
+                    PROJECT CODE: LBLEND-{project.id.toString().padStart(4, '0')} | {project.type} MISSION
+                </p>
+            </div>
+
             {isDesignProject ? (
                 viewMode === 'INTERNAL' ? (
-                    <div className="animate-fade-in">
+                    <div className="animate-fade-in" style={{ padding: isMobile ? '0 20px' : '0 40px' }}>
+                        {/* CONTENT AREA */}
                         <div className="blend-card" style={{ padding: isMobile ? '25px' : '40px', marginBottom: '40px', boxShadow: '0 10px 40px rgba(0,0,0,0.02)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                 <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--secondary)' }}>Design Updates & Links</h3>
                                 <div style={{ padding: '6px 14px', background: '#f8fafc', borderRadius: '100px', fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)' }}>{commits.length} CARDS</div>
                             </div>
 
-                            {!selectedBranch ? (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                                    <p style={{ fontWeight: '600' }}>No active design branch found. Please select or create a branch to begin.</p>
-                                </div>
-                            ) : (
-                                isCurrentUserDesigner === isDesignProject ? (
-                                    <div style={{ position: 'relative' }}>
-                                        <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center' }}>
-                                            <div style={{ flex: pendingSource ? 1 : 2, position: 'relative', display: 'flex', gap: '15px' }}>
-                                                <input
-                                                    value={newCommitMsg}
-                                                    onChange={(e) => setNewCommitMsg(e.target.value)}
-                                                    placeholder="What's the update? (Add a message or link)"
-                                                    style={{ flex: 1, padding: '15px 25px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem' }}
-                                                />
-                                                
-                                                {pendingSource && (
-                                                    <div style={{ flex: 1, display: 'flex', gap: '10px', animation: 'fadeIn 0.3s' }}>
-                                                        <input
-                                                            value={pendingUrl}
-                                                            onChange={(e) => setPendingUrl(e.target.value)}
-                                                            placeholder={`Paste ${pendingSource.label} link...`}
-                                                            autoFocus
-                                                            style={{ flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid var(--accent)', background: '#fff', fontWeight: '600', fontSize: '0.85rem' }}
-                                                        />
-                                                        <button 
-                                                            onClick={() => {
-                                                                if (pendingUrl) {
-                                                                    setAttachedLinks([...attachedLinks, { type: pendingSource.type, url: pendingUrl, label: pendingSource.label }]);
-                                                                    setPendingSource(null);
-                                                                    setPendingUrl('');
-                                                                }
-                                                            }}
-                                                            style={{ width: '55px', height: '55px', borderRadius: '15px', border: 'none', background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            {isCurrentUserDesigner === isDesignProject ? (
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center' }}>
+                                        <div style={{ flex: pendingSource ? 1 : 2, position: 'relative', display: 'flex', gap: '15px' }}>
+                                            <input
+                                                value={newCommitMsg}
+                                                onChange={(e) => setNewCommitMsg(e.target.value)}
+                                                placeholder="What's the update? (Add a message or link)"
+                                                style={{ flex: 1, padding: '15px 25px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem' }}
+                                            />
+
+                                            {pendingSource && (
+                                                <div style={{ flex: 1, display: 'flex', gap: '10px', animation: 'fadeIn 0.3s' }}>
+                                                    <input
+                                                        value={pendingUrl}
+                                                        onChange={(e) => setPendingUrl(e.target.value)}
+                                                        placeholder={`Paste ${pendingSource.label} link...`}
+                                                        autoFocus
+                                                        style={{ flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid var(--accent)', background: '#fff', fontWeight: '600', fontSize: '0.85rem' }}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (pendingUrl) {
+                                                                setAttachedLinks([...attachedLinks, { type: pendingSource.type, url: pendingUrl, label: pendingSource.label }]);
+                                                                setPendingSource(null);
+                                                                setPendingUrl('');
+                                                            }
+                                                        }}
+                                                        style={{ width: '55px', height: '55px', borderRadius: '15px', border: 'none', background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                    >
+                                                        <Check size={20} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setPendingSource(null); setPendingUrl(''); }}
+                                                        style={{ width: '55px', height: '55px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                    >
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* CONFIRMED LINK ICONS */}
+                                        {!pendingSource && attachedLinks.map((link, i) => (
+                                            <div
+                                                key={i}
+                                                style={{ position: 'relative', width: '55px', height: '55px' }}
+                                                onMouseEnter={() => setHoveredLink(i)}
+                                                onMouseLeave={() => setHoveredLink(null)}
+                                            >
+                                                <div style={{
+                                                    width: '100%', height: '100%', borderRadius: '15px',
+                                                    background: 'var(--secondary)', color: 'white',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                                                    transition: 'all 0.3s',
+                                                    opacity: hoveredLink === i ? 0.2 : 1
+                                                }}>
+                                                    {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> :
+                                                        link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
+                                                            link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
+                                                                link.type === 'terminal' ? <Terminal size={20} /> :
+                                                                    <ExternalLink size={20} />}
+                                                </div>
+                                                {hoveredLink === i && (
+                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); window.open(link.url, '_blank'); }}
+                                                            style={{ flex: 1, border: 'none', background: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', transition: 'all 0.2s' }}
+                                                            title="Verify Link"
                                                         >
-                                                            <Check size={20} />
+                                                            <Eye size={18} />
                                                         </button>
-                                                        <button 
-                                                            onClick={() => { setPendingSource(null); setPendingUrl(''); }}
-                                                            style={{ width: '55px', height: '55px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setAttachedLinks(attachedLinks.filter((_, idx) => idx !== i)); }}
+                                                            style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
+                                                            title="Delete"
                                                         >
-                                                            <X size={20} />
+                                                            <X size={18} />
                                                         </button>
                                                     </div>
                                                 )}
                                             </div>
+                                        ))}
 
-                                            {/* CONFIRMED LINK ICONS */}
-                                            {!pendingSource && attachedLinks.map((link, i) => (
-                                                <div 
-                                                    key={i} 
-                                                    style={{ position: 'relative', width: '55px', height: '55px' }}
-                                                    onMouseEnter={() => setHoveredLink(i)}
-                                                    onMouseLeave={() => setHoveredLink(null)}
+                                        {!pendingSource && (
+                                            <div style={{ position: 'relative' }}>
+                                                <button
+                                                    onClick={() => setShowSourceSelector(!showSourceSelector)}
+                                                    className="btn-secondary"
+                                                    style={{ width: '55px', height: '55px', padding: 0, borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: (attachedLinks.length > 0 || commitFile) ? 'var(--accent)' : '#f8fafc', border: '1px solid var(--border)', cursor: 'pointer' }}
+                                                    title="Select Intel Source"
                                                 >
-                                                    <div style={{ 
-                                                        width: '100%', height: '100%', borderRadius: '15px', 
-                                                        background: 'var(--secondary)', color: 'white', 
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-                                                        transition: 'all 0.3s',
-                                                        opacity: hoveredLink === i ? 0.2 : 1
+                                                    <Plus size={20} style={{ transform: showSourceSelector ? 'rotate(45deg)' : 'none', transition: 'all 0.3s' }} />
+                                                </button>
+
+                                                {showSourceSelector && (
+                                                    <div style={{
+                                                        position: 'absolute', bottom: '70px', right: 0, width: '220px',
+                                                        background: '#fff', borderRadius: '18px', boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
+                                                        padding: '10px', zIndex: 100, border: '1px solid var(--border)',
+                                                        animation: 'slideUp 0.3s ease'
                                                     }}>
-                                                        {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> : 
-                                                         link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
-                                                         link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
-                                                         link.type === 'terminal' ? <Terminal size={20} /> :
-                                                         <ExternalLink size={20} />}
+                                                        <p style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)', padding: '10px', letterSpacing: '1px' }}>INTEL SOURCE</p>
+                                                        <button onClick={() => { setPendingSource({ type: 'figma', label: 'Figma' }); setShowSourceSelector(false); }} style={sourceBtnStyle}><FigmaIcon size={16} /> Figma Link</button>
+                                                        <button onClick={() => { setPendingSource({ type: 'xd', label: 'Adobe XD' }); setShowSourceSelector(false); }} style={sourceBtnStyle}><AdobeXDIcon size={16} /> Adobe XD</button>
+                                                        <button onClick={() => { setPendingSource({ type: 'behance', label: 'Behance' }); setShowSourceSelector(false); }} style={sourceBtnStyle}><BehanceIcon size={16} /> Behance Link</button>
+                                                        <button onClick={() => { document.getElementById('commit-file-upload-design').click(); setShowSourceSelector(false); }} style={sourceBtnStyle}><Paperclip size={16} /> Local File</button>
                                                     </div>
-                                                    {hoveredLink === i && (
-                                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); window.open(link.url, '_blank'); }}
-                                                                style={{ flex: 1, border: 'none', background: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', transition: 'all 0.2s' }}
-                                                                title="Verify Link"
-                                                                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                                                            >
-                                                                <Eye size={18} />
-                                                            </button>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); setAttachedLinks(attachedLinks.filter((_, idx) => idx !== i)); }}
-                                                                style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
-                                                                title="Delete"
-                                                                onMouseEnter={(e) => e.currentTarget.style.background = '#fff'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.95)'}
-                                                            >
-                                                                <X size={18} />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
+                                                )}
+                                            </div>
+                                        )}
 
-                                            {/* FILE ICON */}
-                                            {!pendingSource && commitFile && (
-                                                <div 
-                                                    style={{ position: 'relative', width: '55px', height: '55px' }}
-                                                    onMouseEnter={() => setHoveredLink('file')}
-                                                    onMouseLeave={() => setHoveredLink(null)}
-                                                >
-                                                    <div style={{ 
-                                                        width: '100%', height: '100%', borderRadius: '15px', 
-                                                        background: 'var(--accent)', color: 'var(--secondary)', 
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-                                                        transition: 'all 0.3s',
-                                                        opacity: hoveredLink === 'file' ? 0.2 : 1
-                                                    }}>
-                                                        <Paperclip size={20} />
-                                                    </div>
-                                                    {hoveredLink === 'file' && (
-                                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
-                                                            <div style={{ flex: 1, background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', fontSize: '0.6rem', fontWeight: '900', overflow: 'hidden', whiteSpace: 'nowrap', padding: '0 4px' }}>
-                                                                FILE
-                                                            </div>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); setCommitFile(null); }}
-                                                                style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
-                                                                title="Remove File"
-                                                                onMouseEnter={(e) => e.currentTarget.style.background = '#fff'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.95)'}
-                                                            >
-                                                                <X size={18} />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            
-                                            {!pendingSource && (
-                                                <div style={{ position: 'relative' }}>
-                                                    <button
-                                                        onClick={() => setShowSourceSelector(!showSourceSelector)}
-                                                        className="btn-secondary"
-                                                        style={{ width: '55px', height: '55px', padding: 0, borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: (attachedLinks.length > 0 || commitFile) ? 'var(--accent)' : '#f8fafc', border: '1px solid var(--border)', cursor: 'pointer' }}
-                                                        title="Select Intel Source"
-                                                    >
-                                                        <Plus size={20} style={{ transform: showSourceSelector ? 'rotate(45deg)' : 'none', transition: 'all 0.3s' }} />
-                                                    </button>
-
-                                                    {showSourceSelector && (
-                                                        <div style={{
-                                                            position: 'absolute', bottom: '70px', right: 0, width: '220px',
-                                                            background: '#fff', borderRadius: '18px', boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
-                                                            padding: '10px', zIndex: 100, border: '1px solid var(--border)',
-                                                            animation: 'slideUp 0.3s ease'
-                                                        }}>
-                                                            <p style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)', padding: '10px', letterSpacing: '1px' }}>INTEL SOURCE</p>
-                                                            
-                                                            {isCurrentUserDesigner ? (
-                                                                <>
-                                                                    <button onClick={() => { setPendingSource({ type: 'figma', label: 'Figma' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><FigmaIcon size={16} /> Figma Link</button>
-                                                                    <button onClick={() => { setPendingSource({ type: 'xd', label: 'Adobe XD' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><AdobeXDIcon size={16} /> Adobe XD</button>
-                                                                    <button onClick={() => { setPendingSource({ type: 'behance', label: 'Behance' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><BehanceIcon size={16} /> Behance Link</button>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <button onClick={() => { setPendingSource({ type: 'link', label: 'GitHub' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><GithubIcon size={16} /> GitHub Ref</button>
-                                                                    <button onClick={() => { setPendingSource({ type: 'terminal', label: 'Terminal' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><Terminal size={16} /> Terminal Log</button>
-                                                                </>
-                                                            )}
-
-                                                            <button onClick={() => { document.getElementById('commit-file-upload-design').click(); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><Paperclip size={16} /> Local File</button>
-                                                            <button onClick={() => { setPendingSource({ type: 'link', label: 'Link' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><ExternalLink size={16} /> General Link</button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            <button onClick={handleAddCommit} className="btn-primary" style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <Send size={18} /> COMMIT
-                                            </button>
-                                        </div>
-
-                                        <input
-                                            id="commit-file-upload-design"
-                                            type="file"
-                                            accept={ALLOWED_FILE_TYPES}
-                                            onChange={(e) => {
-                                                if (e.target.files?.[0]) setCommitFile(e.target.files[0]);
-                                            }}
-                                            style={{ display: 'none' }}
-                                        />
-
+                                        <button
+                                            onClick={handleAddCommit}
+                                            disabled={loading || (!newCommitMsg && !commitFile) || !selectedBranch}
+                                            className="btn-primary"
+                                            style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px', opacity: !selectedBranch ? 0.5 : 1 }}
+                                        >
+                                            <Send size={18} /> COMMIT
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.8rem', border: '1px dashed var(--border)' }}>
-                                        Read-Only: Only Designers can broadcast updates to the Design Lab.
-                                    </div>
-                                )
+
+                                    <input
+                                        id="commit-file-upload-design"
+                                        type="file"
+                                        accept={ALLOWED_FILE_TYPES}
+                                        onChange={(e) => { if (e.target.files?.[0]) setCommitFile(e.target.files[0]); }}
+                                        style={{ display: 'none' }}
+                                    />
+                                </div>
+                            ) : (
+                                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '100px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.65rem', border: '1px dashed var(--border)' }}>
+                                    Read-Only: Only Designers can broadcast updates to the Hub.
+                                </div>
                             )}
                         </div>
 
@@ -1355,10 +1317,10 @@ const ProjectWorkshop = ({ project, onBack }) => {
                             <div style={{ marginBottom: '60px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', opacity: 0.6 }}>
                                     <Layers size={14} color="var(--accent)" />
-                                    <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary)' }}>CONNECTED INTELLIGENCE</span>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary)' }}>INTEL BRANCHES</span>
                                     <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                                 </div>
-                                
+
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '80px', position: 'relative', zIndex: 15 }}>
                                     {/* Principal Card: Always considered part of the main story if it has any connection */}
                                     {(connections.some(c => c.fromId === 'principal' || c.toId === 'principal') || commits.length === 0) && (
@@ -1393,10 +1355,10 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                             onEdit={(c) => {
                                                 const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
                                                 const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
-                                                setRenaming({ 
-                                                    type: 'commit', 
-                                                    id: c.id, 
-                                                    value: messageWithoutUrls, 
+                                                setRenaming({
+                                                    type: 'commit',
+                                                    id: c.id,
+                                                    value: messageWithoutUrls,
                                                     file_url: c.file_url,
                                                     attachedLinks: urls.map(url => {
                                                         let type = 'link';
@@ -1414,69 +1376,69 @@ const ProjectWorkshop = ({ project, onBack }) => {
                             </div>
 
                             {/* Section 2: Standalone Updates */}
-                            {((!connections.some(c => c.fromId === 'principal' || c.toId === 'principal') && commits.length > 0) || 
-                               commits.some(c => c.message !== 'Genesis: Project Initialized' && !connections.some(conn => conn.fromId === c.id || conn.toId === c.id))) && (
-                                <div style={{ marginTop: '80px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', opacity: 0.6 }}>
-                                        <Send size={14} color="var(--text-muted)" />
-                                        <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--text-muted)' }}>INDEPENDENT UPDATES</span>
-                                        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                                    </div>
-                                    
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '80px', position: 'relative', zIndex: 15 }}>
-                                        {/* Principal Card if not connected */}
-                                        {!connections.some(c => c.fromId === 'principal' || c.toId === 'principal') && commits.length > 0 && (
-                                            <DesignCommitCard
-                                                key="principal"
-                                                isPrincipal={true}
-                                                activeNode={activeNode}
-                                                onNodeClick={handleNodeClick}
-                                                commit={{
-                                                    id: 'principal',
-                                                    message: isDesignProject ? project.figma_link : project.github_url,
-                                                    user_id: project.user_id,
-                                                    created_at: project.created_at,
-                                                    author: project.username,
-                                                    username: project.username,
-                                                    file_url: null
-                                                }}
-                                                currentUser={currentUser}
-                                                onDelete={() => { }}
-                                                onEdit={() => { }}
-                                            />
-                                        )}
+                            {((!connections.some(c => c.fromId === 'principal' || c.toId === 'principal') && commits.length > 0) ||
+                                commits.some(c => c.message !== 'Genesis: Project Initialized' && !connections.some(conn => conn.fromId === c.id || conn.toId === c.id))) && (
+                                    <div style={{ marginTop: '80px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', opacity: 0.6 }}>
+                                            <Send size={14} color="var(--text-muted)" />
+                                            <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--text-muted)' }}>STANDALONE INTEL</span>
+                                            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                                        </div>
 
-                                        {commits.filter(c => c.message !== 'Genesis: Project Initialized' && !connections.some(conn => conn.fromId === c.id || conn.toId === c.id)).map(commit => (
-                                            <DesignCommitCard
-                                                key={commit.id}
-                                                commit={commit}
-                                                activeNode={activeNode}
-                                                onNodeClick={handleNodeClick}
-                                                currentUser={currentUser}
-                                                onDelete={(c) => handleDeleteCommit(c)}
-                                                onEdit={(c) => {
-                                                    const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
-                                                    const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
-                                                    setRenaming({ 
-                                                        type: 'commit', 
-                                                        id: c.id, 
-                                                        value: messageWithoutUrls, 
-                                                        file_url: c.file_url,
-                                                        attachedLinks: urls.map(url => {
-                                                            let type = 'link';
-                                                            if (url.includes('figma.com')) type = 'figma';
-                                                            else if (url.includes('xd.adobe.com')) type = 'xd';
-                                                            else if (url.includes('behance.net')) type = 'behance';
-                                                            else if (url.includes('github.com')) type = 'github';
-                                                            return { type, url };
-                                                        })
-                                                    });
-                                                }}
-                                            />
-                                        ))}
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '80px', position: 'relative', zIndex: 15 }}>
+                                            {/* Principal Card if not connected */}
+                                            {!connections.some(c => c.fromId === 'principal' || c.toId === 'principal') && commits.length > 0 && (
+                                                <DesignCommitCard
+                                                    key="principal"
+                                                    isPrincipal={true}
+                                                    activeNode={activeNode}
+                                                    onNodeClick={handleNodeClick}
+                                                    commit={{
+                                                        id: 'principal',
+                                                        message: isDesignProject ? project.figma_link : project.github_url,
+                                                        user_id: project.user_id,
+                                                        created_at: project.created_at,
+                                                        author: project.username,
+                                                        username: project.username,
+                                                        file_url: null
+                                                    }}
+                                                    currentUser={currentUser}
+                                                    onDelete={() => { }}
+                                                    onEdit={() => { }}
+                                                />
+                                            )}
+
+                                            {commits.filter(c => c.message !== 'Genesis: Project Initialized' && !connections.some(conn => conn.fromId === c.id || conn.toId === c.id)).map(commit => (
+                                                <DesignCommitCard
+                                                    key={commit.id}
+                                                    commit={commit}
+                                                    activeNode={activeNode}
+                                                    onNodeClick={handleNodeClick}
+                                                    currentUser={currentUser}
+                                                    onDelete={(c) => handleDeleteCommit(c)}
+                                                    onEdit={(c) => {
+                                                        const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
+                                                        const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
+                                                        setRenaming({
+                                                            type: 'commit',
+                                                            id: c.id,
+                                                            value: messageWithoutUrls,
+                                                            file_url: c.file_url,
+                                                            attachedLinks: urls.map(url => {
+                                                                let type = 'link';
+                                                                if (url.includes('figma.com')) type = 'figma';
+                                                                else if (url.includes('xd.adobe.com')) type = 'xd';
+                                                                else if (url.includes('behance.net')) type = 'behance';
+                                                                else if (url.includes('github.com')) type = 'github';
+                                                                return { type, url };
+                                                            })
+                                                        });
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                         </div>
                     </div>
                 ) : (
@@ -1977,7 +1939,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                         <form onSubmit={(e) => { e.preventDefault(); handleEditCommit(); }}>
                             <div className="input-group" style={{ marginBottom: '30px' }}>
                                 <label style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary, #004842)', opacity: 0.4, marginBottom: '10px', display: 'block' }}>COMMIT MESSAGE</label>
-                                
+
                                 <div style={{ position: 'relative' }}>
                                     <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center' }}>
                                         <div style={{ flex: editPendingSource ? 1 : 2, position: 'relative', display: 'flex', gap: '15px' }}>
@@ -1988,7 +1950,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                 placeholder="Update message..."
                                                 style={{ flex: 1, padding: '15px 25px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem', minHeight: '80px', resize: 'vertical' }}
                                             />
-                                            
+
                                             {editPendingSource && (
                                                 <div style={{ flex: 1, display: 'flex', gap: '10px', animation: 'fadeIn 0.3s' }}>
                                                     <input
@@ -1998,7 +1960,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         autoFocus
                                                         style={{ flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid var(--accent)', background: '#fff', fontWeight: '600', fontSize: '0.85rem' }}
                                                     />
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         onClick={() => {
                                                             if (editPendingUrl) {
@@ -2014,7 +1976,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     >
                                                         <Check size={20} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         onClick={() => { setEditPendingSource(null); setEditPendingUrl(''); }}
                                                         style={{ width: '55px', height: '80px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -2027,29 +1989,29 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
                                         {/* CONFIRMED LINK ICONS */}
                                         {!editPendingSource && renaming.attachedLinks?.map((link, i) => (
-                                            <div 
-                                                key={i} 
+                                            <div
+                                                key={i}
                                                 style={{ position: 'relative', width: '55px', height: '80px' }}
                                                 onMouseEnter={() => setEditHoveredLink(i)}
                                                 onMouseLeave={() => setEditHoveredLink(null)}
                                             >
-                                                <div style={{ 
-                                                    width: '100%', height: '100%', borderRadius: '15px', 
-                                                    background: 'var(--secondary)', color: 'white', 
+                                                <div style={{
+                                                    width: '100%', height: '100%', borderRadius: '15px',
+                                                    background: 'var(--secondary)', color: 'white',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                     boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
                                                     transition: 'all 0.3s',
                                                     opacity: editHoveredLink === i ? 0.2 : 1
                                                 }}>
-                                                    {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> : 
-                                                     link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
-                                                     link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
-                                                     link.type === 'terminal' ? <Terminal size={20} /> :
-                                                     <ExternalLink size={20} />}
+                                                    {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> :
+                                                        link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
+                                                            link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
+                                                                link.type === 'terminal' ? <Terminal size={20} /> :
+                                                                    <ExternalLink size={20} />}
                                                 </div>
                                                 {editHoveredLink === i && (
                                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
-                                                        <button 
+                                                        <button
                                                             type="button"
                                                             onClick={(e) => { e.stopPropagation(); window.open(link.url, '_blank'); }}
                                                             style={{ flex: 1, border: 'none', background: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', transition: 'all 0.2s' }}
@@ -2059,10 +2021,10 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         >
                                                             <Eye size={18} />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             type="button"
-                                                            onClick={(e) => { 
-                                                                e.stopPropagation(); 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 setRenaming({
                                                                     ...renaming,
                                                                     attachedLinks: renaming.attachedLinks.filter((_, idx) => idx !== i)
@@ -2079,7 +2041,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                 )}
                                             </div>
                                         ))}
-                                        
+
                                         {!editPendingSource && (
                                             <div style={{ position: 'relative' }}>
                                                 <button
@@ -2100,7 +2062,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         animation: 'slideUp 0.3s ease'
                                                     }}>
                                                         <p style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)', padding: '10px', letterSpacing: '1px' }}>INTEL SOURCE</p>
-                                                        
+
                                                         {isCurrentUserDesigner ? (
                                                             <>
                                                                 <button type="button" onClick={() => { setEditPendingSource({ type: 'figma', label: 'Figma' }); setShowEditSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><FigmaIcon size={16} /> Figma Link</button>
