@@ -1242,7 +1242,8 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
             {false ? (
                 viewMode === 'INTERNAL' ? (
-                    <div className="animate-fade-in">
+                    <div className="animate-fade-in" style={{ padding: isMobile ? '0 20px' : '0 40px' }}>
+                        {/* CONTENT AREA */}
                         <div className="blend-card" style={{ padding: isMobile ? '25px' : '40px', marginBottom: '40px', boxShadow: '0 10px 40px rgba(0,0,0,0.02)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                 <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--secondary)' }}>Design Updates & Links</h3>
@@ -1284,17 +1285,18 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                             }}
                                                             style={{ width: '55px', height: '55px', borderRadius: '15px', border: 'none', background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
-                                                            <Check size={20} />
+                                                            <Eye size={18} />
                                                         </button>
                                                         <button
                                                             onClick={() => { setPendingSource(null); setPendingUrl(''); }}
                                                             style={{ width: '55px', height: '55px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
-                                                            <X size={20} />
+                                                            <X size={18} />
                                                         </button>
                                                     </div>
                                                 )}
                                             </div>
+                                        ))}
 
                                             {/* CONFIRMED LINK ICONS */}
                                             {!pendingSource && attachedLinks.map((link, i) => (
@@ -1434,12 +1436,28 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                             style={{ display: 'none' }}
                                         />
 
+                                        <button
+                                            onClick={handleAddCommit}
+                                            disabled={loading || (!newCommitMsg && !commitFile) || !selectedBranch}
+                                            className="btn-primary"
+                                            style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px', opacity: !selectedBranch ? 0.5 : 1 }}
+                                        >
+                                            <Send size={18} /> COMMIT
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.8rem', border: '1px dashed var(--border)' }}>
-                                        Read-Only: Only Designers can broadcast updates to the Design Lab.
-                                    </div>
-                                )
+
+                                    <input
+                                        id="commit-file-upload-design"
+                                        type="file"
+                                        accept={ALLOWED_FILE_TYPES}
+                                        onChange={(e) => { if (e.target.files?.[0]) setCommitFile(e.target.files[0]); }}
+                                        style={{ display: 'none' }}
+                                    />
+                                </div>
+                            ) : (
+                                <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '100px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.65rem', border: '1px dashed var(--border)' }}>
+                                    Read-Only: Only Designers can broadcast updates to the Hub.
+                                </div>
                             )}
                         </div>
 
