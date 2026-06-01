@@ -119,7 +119,7 @@ const BehanceIcon = ({ size = 18, color = "currentColor" }) => (
     </svg>
 );
 
-const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal = false, activeNode, onNodeClick }) => {
+const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal = false, activeNode, onNodeClick, leftConnected, rightConnected }) => {
     const [designData, setDesignData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -163,54 +163,30 @@ const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal =
     const isBehanceUrl = commit.message?.toLowerCase().includes('behance.net');
 
     return (
-        <div style={{ position: 'relative', height: '100%' }}>
-            {/* CONNECTION NODES */}
-            {!isPrincipal && (
-                <div
-                    id={`node-${commit.id}-left`}
-                    onClick={(e) => onNodeClick && onNodeClick(commit.id, 'left', e)}
-                    style={{
-                        position: 'absolute', left: '-12px', top: '50%', transform: 'translateY(-50%)',
-                        width: '24px', height: '24px', borderRadius: '50%', background: 'white',
-                        border: '4px solid var(--secondary)', cursor: 'pointer', zIndex: 20,
-                        boxShadow: activeNode?.id === commit.id && activeNode?.side === 'left' ? '0 0 0 5px rgba(0,72,66,0.2)' : '0 4px 10px rgba(0,0,0,0.1)',
-                        transition: 'all 0.2s'
-                    }}
-                />
-            )}
-            <div
-                id={`node-${commit.id}-right`}
-                onClick={(e) => onNodeClick && onNodeClick(commit.id, 'right', e)}
-                style={{
-                    position: 'absolute', right: '-12px', top: '50%', transform: 'translateY(-50%)',
-                    width: '24px', height: '24px', borderRadius: '50%', background: 'white',
-                    border: '4px solid var(--accent)', cursor: 'pointer', zIndex: 20,
-                    boxShadow: activeNode?.id === commit.id && activeNode?.side === 'right' ? '0 0 0 5px rgba(230,208,76,0.3)' : '0 4px 10px rgba(0,0,0,0.1)',
-                    transition: 'all 0.2s'
-                }}
-            />
-
-            <div style={{
+        <div style={{
                 background: '#ffffff',
-                borderRadius: '24px',
+                borderRadius: '20px',
                 border: isPrincipal ? '2px solid var(--accent)' : '1px solid rgba(0,0,0,0.06)',
-                boxShadow: isPrincipal ? '0 15px 50px rgba(184, 168, 48, 0.15)' : '0 10px 40px rgba(0,0,0,0.03)',
+                boxShadow: isPrincipal ? '0 10px 30px rgba(184, 168, 48, 0.12)' : '0 6px 20px rgba(0,0,0,0.02)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
+                width: '300px', // Fixed width for better organization
+                flexShrink: 0,
                 transition: 'transform 0.3s, box-shadow 0.3s'
             }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = isPrincipal ? '0 20px 60px rgba(184, 168, 48, 0.25)' : '0 20px 50px rgba(0,0,0,0.08)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isPrincipal ? '0 15px 50px rgba(184, 168, 48, 0.15)' : '0 10px 40px rgba(0,0,0,0.03)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = isPrincipal ? '0 15px 40px rgba(184, 168, 48, 0.2)' : '0 12px 30px rgba(0,0,0,0.06)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isPrincipal ? '0 10px 30px rgba(184, 168, 48, 0.12)' : '0 6px 20px rgba(0,0,0,0.02)'; }}
             >
                 <div
-                    style={{ height: '220px', background: '#f1f5f9', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: commit.file_url || designData ? 'pointer' : 'default' }}
+                    style={{ height: '160px', background: '#f1f5f9', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: commit.file_url || designData ? 'pointer' : 'default' }}
+
                     onClick={() => {
-                        const urlToOpen = commit.file_url || 
-                            (isFigmaUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?figma\.com\/[^\s]+)/i)?.[0] : 
-                             isXDUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?xd\.adobe\.com\/view\/[^\s]+)/i)?.[0] : 
-                             isBehanceUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?behance\.net\/gallery\/[^\s]+)/i)?.[0] : null);
+                        const urlToOpen = commit.file_url ||
+                            (isFigmaUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?figma\.com\/[^\s]+)/i)?.[0] :
+                                isXDUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?xd\.adobe\.com\/view\/[^\s]+)/i)?.[0] :
+                                    isBehanceUrl ? commit.message.match(/(https:\/\/([\w\.-]+\.)?behance\.net\/gallery\/[^\s]+)/i)?.[0] : null);
                         if (urlToOpen) window.open(urlToOpen, '_blank');
                     }}
                 >
@@ -221,8 +197,9 @@ const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal =
                     ) : commit.file_url && isImageFile(commit.file_url) ? (
                         <img src={commit.file_url} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none' }} alt="Attachment" />
                     ) : (
-                        <div style={{ color: 'var(--text-muted)', fontWeight: '800' }}>No Preview Available</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.7rem' }}>No Preview Available</div>
                     )}
+
 
                     {isPrincipal && (
                         <div style={{ position: 'absolute', top: '15px', left: '15px', background: 'var(--secondary)', color: 'var(--accent)', borderRadius: '8px', padding: '6px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.65rem', fontWeight: '900', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -251,17 +228,18 @@ const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal =
                         </div>
                     )}
                 </div>
-                <div style={{ padding: '25px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <h4 style={{ margin: '0 0 15px 0', fontSize: '1.05rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.4' }}>
+                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.4', height: '2.8em', overflow: 'hidden' }}>
                         {designData ? designData.title : linkifyText(commit.message)}
                     </h4>
-                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'var(--secondary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900' }}>
+                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ width: '20px', height: '20px', borderRadius: '5px', background: 'var(--secondary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: '900' }}>
                                 {(commit.author?.[0] || commit.username?.[0] || 'U').toUpperCase()}
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--secondary)', fontWeight: '800' }}>{commit.author || commit.username || 'UNKNOWN'}</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--secondary)', fontWeight: '800' }}>{commit.author || commit.username || 'UNKNOWN'}</span>
                         </div>
+
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700' }}>
                             {isPrincipal ? 'Project Link' : `Edited ${new Date(commit.created_at).toLocaleDateString()}`}
                         </span>
@@ -279,7 +257,6 @@ const DesignCommitCard = ({ commit, currentUser, onDelete, onEdit, isPrincipal =
                     )}
                 </div>
             </div>
-        </div>
     );
 };
 
@@ -427,7 +404,7 @@ const SchemaCanvas = ({ commits, project, connections, activeNode, onNodeClick, 
                         key={i}
                         id={`line-${conn.fromId}-${conn.toId}`}
                         d="" // Calculated by updateLinesNative
-                        stroke="var(--accent)"
+                        stroke="#10b981"
                         strokeWidth="5"
                         fill="none"
                         strokeLinecap="round"
@@ -435,16 +412,29 @@ const SchemaCanvas = ({ commits, project, connections, activeNode, onNodeClick, 
                             pointerEvents: 'auto',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            filter: 'drop-shadow(0 4px 6px rgba(184, 168, 48, 0.4))'
+                            filter: 'drop-shadow(0 4px 6px rgba(16, 185, 129, 0.4))'
                         }}
                         onClick={(e) => {
                             e.stopPropagation();
+                            const isUserDesigner = (currentUser?.occupation || '').toUpperCase().includes('DESIGN');
+                            if (isDesignProject && !isUserDesigner) {
+                                toast.error("Read-Only: Only Designers can modify connections in the Design Lab.");
+                                return;
+                            }
                             const newConns = connections.filter((_, idx) => idx !== i);
                             setConnections(newConns);
                             axios.post('http://localhost:5000/api/workshop/schema', { projectId: project.id, positions: {}, connections: newConns }).catch(console.error);
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.stroke = '#e11d48'; e.currentTarget.style.strokeWidth = '8'; e.currentTarget.style.opacity = '1'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.stroke = 'var(--accent)'; e.currentTarget.style.strokeWidth = '5'; e.currentTarget.style.opacity = '0.8'; }}
+                        onMouseEnter={(e) => { 
+                            const isUserDesigner = (currentUser?.occupation || '').toUpperCase().includes('DESIGN');
+                            if(isDesignProject && !isUserDesigner) return;
+                            e.currentTarget.style.stroke = '#e11d48'; e.currentTarget.style.strokeWidth = '8'; e.currentTarget.style.opacity = '1'; 
+                        }}
+                        onMouseLeave={(e) => { 
+                            const isUserDesigner = (currentUser?.occupation || '').toUpperCase().includes('DESIGN');
+                            if(isDesignProject && !isUserDesigner) return;
+                            e.currentTarget.style.stroke = '#10b981'; e.currentTarget.style.strokeWidth = '5'; e.currentTarget.style.opacity = '0.8'; 
+                        }}
                     />
                 ))}
                 {activeNode && (() => {
@@ -461,7 +451,7 @@ const SchemaCanvas = ({ commits, project, connections, activeNode, onNodeClick, 
                     return (
                         <path
                             d={`M ${x1} ${y1} C ${c1x} ${y1}, ${c2x} ${mousePos.y}, ${mousePos.x} ${mousePos.y}`}
-                            stroke="var(--accent)"
+                            stroke="#10b981"
                             strokeWidth="5"
                             fill="none"
                             strokeDasharray="10,10"
@@ -481,6 +471,7 @@ const SchemaCanvas = ({ commits, project, connections, activeNode, onNodeClick, 
                     isPrincipal={true}
                     activeNode={activeNode}
                     onNodeClick={onNodeClick}
+                    rightConnected={connections.some(c => (c.fromId === 'principal' && c.fromSide === 'right') || (c.toId === 'principal' && c.toSide === 'right'))}
                     commit={{
                         id: 'principal',
                         message: isDesignProject ? project.figma_link : project.github_url,
@@ -507,15 +498,17 @@ const SchemaCanvas = ({ commits, project, connections, activeNode, onNodeClick, 
                         commit={commit}
                         activeNode={activeNode}
                         onNodeClick={onNodeClick}
+                        leftConnected={connections.some(c => (c.fromId === commit.id && c.fromSide === 'left') || (c.toId === commit.id && c.toSide === 'left'))}
+                        rightConnected={connections.some(c => (c.fromId === commit.id && c.fromSide === 'right') || (c.toId === commit.id && c.toSide === 'right'))}
                         currentUser={currentUser}
                         onDelete={() => { }}
                         onEdit={(c) => {
                             const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
                             const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
-                            setRenaming({ 
-                                type: 'commit', 
-                                id: c.id, 
-                                value: messageWithoutUrls, 
+                            setRenaming({
+                                type: 'commit',
+                                id: c.id,
+                                value: messageWithoutUrls,
                                 file_url: c.file_url,
                                 attachedLinks: urls.map(url => {
                                     let type = 'link';
@@ -538,6 +531,8 @@ const ProjectWorkshop = ({ project, onBack }) => {
     const [internalBranches, setInternalBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState(null);
     const [commits, setCommits] = useState([]);
+    const [allCommits, setAllCommits] = useState([]); // All commits for the project
+
     const [newBranchName, setNewBranchName] = useState('');
     const [newCommitMsg, setNewCommitMsg] = useState('');
     const [commitFile, setCommitFile] = useState(null);
@@ -552,7 +547,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
     const [pendingSource, setPendingSource] = useState(null); // { type, label }
     const [pendingUrl, setPendingUrl] = useState('');
     const [hoveredLink, setHoveredLink] = useState(null);
-    
+
     // Edit Modal specific states
     const [editPendingSource, setEditPendingSource] = useState(null);
     const [editPendingUrl, setEditPendingUrl] = useState('');
@@ -573,6 +568,12 @@ const ProjectWorkshop = ({ project, onBack }) => {
     const gridRef = useRef(null);
 
     const handleNodeClick = (id, side, e, customRect) => {
+        const isUserDesigner = (AuthService.getCurrentUser()?.occupation || '').toUpperCase().includes('DESIGN');
+        if (!isUserDesigner) {
+            toast.error("Read-Only: Only Designers can connect commits in the Design Lab.");
+            return;
+        }
+
         if (e) {
             const rect = customRect || (gridRef.current ? gridRef.current.getBoundingClientRect() : null);
             if (rect) {
@@ -585,54 +586,139 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
         if (!activeNode) {
             // Check if this node is already connected
-            const existingConnIndex = connections.findIndex(c =>
-                (c.fromId === id && c.fromSide === side) ||
-                (c.toId === id && c.toSide === side)
-            );
+            // Only disconnect if it's a left port. Right ports can have multiple connections (branches).
+            if (side === 'left') {
+                const existingConnIndex = connections.findIndex(c => c.toId === id && c.toSide === 'left');
+                if (existingConnIndex !== -1) {
+                    // Disconnect and pick up the other end of the line
+                    const conn = connections[existingConnIndex];
+                    const newConnections = [...connections];
+                    newConnections.splice(existingConnIndex, 1);
+                    setConnections(newConnections);
 
-            if (existingConnIndex !== -1) {
-                // Disconnect and pick up the other end of the line
-                const conn = connections[existingConnIndex];
-                const newConnections = [...connections];
-                newConnections.splice(existingConnIndex, 1);
-                setConnections(newConnections);
+                    // Auto-save disconnection
+                    axios.post('http://localhost:5000/api/workshop/schema', { projectId: project.id, positions: {}, connections: newConnections }).catch(console.error);
 
-                // Auto-save disconnection
-                axios.post('http://localhost:5000/api/workshop/schema', { projectId: project.id, positions: {}, connections: newConnections }).catch(console.error);
-
-                if (conn.fromId === id && conn.fromSide === side) {
-                    setActiveNode({ id: conn.toId, side: conn.toSide });
-                } else {
                     setActiveNode({ id: conn.fromId, side: conn.fromSide });
+                    return;
                 }
-            } else {
-                setActiveNode({ id, side });
             }
+            // For right ports (or left ports without existing connections), just start a new line
+            setActiveNode({ id, side });
         } else {
             if (activeNode.id === id && activeNode.side === side) {
                 setActiveNode(null); // toggle off
             } else {
+                // Prevent manual connections to/from principal since they are automatic now
+                if (activeNode.id === 'principal' || id === 'principal') {
+                    toast.error("Connections to the Main Project are managed automatically.");
+                    setActiveNode(null);
+                    return;
+                }
+
+                // Prevent self connection
+                if (activeNode.id === id) {
+                    toast.error("Cannot connect a commit to itself.");
+                    setActiveNode(null);
+                    return;
+                }
+
+                // Prevent same side connections (e.g., right to right)
+                if (activeNode.side === side) {
+                    toast.error("Connections must flow between opposite sides (Right to Left).");
+                    setActiveNode(null);
+                    return;
+                }
+
+                // Check if target left port is already connected
+                const targetIsLeft = side === 'left';
+                if (targetIsLeft) {
+                    const targetHasConn = connections.some(c => c.toId === id && c.toSide === 'left');
+                    if (targetHasConn) {
+                        toast.error("A commit can only have one parent. Disconnect its current left connection first.");
+                        setActiveNode(null);
+                        return;
+                    }
+                } else if (activeNode.side === 'left') {
+                    const activeHasConn = connections.some(c => c.toId === activeNode.id && c.toSide === 'left');
+                    if (activeHasConn) {
+                        toast.error("A commit can only have one parent. Disconnect its current left connection first.");
+                        setActiveNode(null);
+                        return;
+                    }
+                }
+
                 const exists = connections.some(c =>
                     (c.fromId === activeNode.id && c.fromSide === activeNode.side && c.toId === id && c.toSide === side) ||
                     (c.fromId === id && c.fromSide === side && c.toId === activeNode.id && c.toSide === activeNode.side)
                 );
+
                 if (!exists) {
-                    const newConnections = [...connections, { fromId: activeNode.id, fromSide: activeNode.side, toId: id, toSide: side }];
+                    // Normalize connection direction so 'from' is always Right and 'to' is always Left
+                    let fromId, fromSide, toId, toSide;
+                    if (activeNode.side === 'right' && side === 'left') {
+                        fromId = activeNode.id; fromSide = 'right';
+                        toId = id; toSide = 'left';
+                    } else {
+                        fromId = id; fromSide = 'right';
+                        toId = activeNode.id; toSide = 'left';
+                    }
+
+                    const newConnections = [...connections, { fromId, fromSide, toId, toSide }];
                     setConnections(newConnections);
 
                     // Auto-save connection
                     axios.post('http://localhost:5000/api/workshop/schema', { projectId: project.id, positions: {}, connections: newConnections }).catch(console.error);
+                    
+                    const parentCommit = allCommits.find(c => c.id === fromId);
+                    const childCommit = allCommits.find(c => c.id === toId);
+                    const mainBranchId = internalBranches.find(b => b.name.toLowerCase() === 'main' || b.name.toLowerCase() === 'master')?.id || internalBranches[0]?.id;
+
+                    if (parentCommit && childCommit) {
+                        if (parentCommit.branch_id === mainBranchId) {
+                            // Branching from main! Create a new branch.
+                            const newBranchName = `branch-${Math.random().toString(36).substring(2, 6)}`;
+                            axios.post('http://localhost:5000/api/workshop/branches', {
+                                project_id: project.id,
+                                name: newBranchName,
+                                user_id: currentUser.id,
+                                type: 'DESIGN'
+                            }).then(res => {
+                                const newBranchId = res.data.id || res.data[0]?.id || res.data.branchId;
+                                if (newBranchId) {
+                                    axios.put(`http://localhost:5000/api/workshop/commits/${toId}`, {
+                                        branch_id: newBranchId
+                                    }).then(() => {
+                                        fetchInternalBranches();
+                                        refreshCommits();
+                                    });
+                                } else {
+                                    fetchInternalBranches();
+                                }
+                                toast.success(`Created new branch: ${newBranchName}`);
+                            }).catch(console.error);
+                        } else if (parentCommit.branch_id !== mainBranchId && childCommit.branch_id === mainBranchId) {
+                            // Continuing an existing branch. Move the child to the parent's branch!
+                            axios.put(`http://localhost:5000/api/workshop/commits/${toId}`, {
+                                branch_id: parentCommit.branch_id
+                            }).then(() => {
+                                refreshCommits();
+                            }).catch(console.error);
+                        }
+                    }
                 }
                 setActiveNode(null);
             }
         }
+
+
     };
 
     const updateLines = useCallback(() => {
         if (!gridRef.current) return;
         const gridRect = gridRef.current.getBoundingClientRect();
 
-        const newLines = connections.map(conn => {
+        const dbLines = connections.map(conn => {
             const fromEl = document.getElementById(`node-${conn.fromId}-${conn.fromSide}`);
             const toEl = document.getElementById(`node-${conn.toId}-${conn.toSide}`);
             if (!fromEl || !toEl) return null;
@@ -645,20 +731,26 @@ const ProjectWorkshop = ({ project, onBack }) => {
             const x2 = toRect.left + toRect.width / 2 - gridRect.left;
             const y2 = toRect.top + toRect.height / 2 - gridRect.top;
 
-            return { x1, y1, x2, y2, id: `${conn.fromId}-${conn.toId}` };
+            return { x1, y1, x2, y2, id: `${conn.fromId}-${conn.toId}`, type: 'db' };
         }).filter(Boolean);
 
-        setLines(newLines);
+        setLines(dbLines);
     }, [connections]);
+
+
 
     useEffect(() => {
         // Run slightly after render to ensure elements are in DOM
         const timer = setTimeout(updateLines, 100);
         window.addEventListener('resize', updateLines);
+        // Added: Listen for scroll events in the capture phase to catch lane scrolling
+        window.addEventListener('scroll', updateLines, true);
         return () => {
             clearTimeout(timer);
             window.removeEventListener('resize', updateLines);
+            window.removeEventListener('scroll', updateLines, true);
         };
+
     }, [updateLines, commits]);
 
     useEffect(() => {
@@ -696,6 +788,11 @@ const ProjectWorkshop = ({ project, onBack }) => {
     const handleBranchContextMenu = (e, branch) => {
         e.preventDefault();
         e.stopPropagation();
+        const isUserDesigner = (currentUser?.occupation || '').toUpperCase().includes('DESIGN');
+        if (isDesignProject && !isUserDesigner) {
+            toast.error("Read-Only: Only Designers can modify branches in the Design Lab.");
+            return;
+        }
         setContextMenu({ x: e.clientX, y: e.clientY, type: 'branch', item: branch });
     };
 
@@ -709,6 +806,11 @@ const ProjectWorkshop = ({ project, onBack }) => {
     // Branch CRUD
     const handleRenameBranch = async () => {
         if (!renaming || renaming.type !== 'branch' || !renaming.value.trim()) return;
+        const isUserDesigner = (currentUser?.occupation || '').toUpperCase().includes('DESIGN');
+        if (isDesignProject && !isUserDesigner) {
+            toast.error("Read-Only: Only Designers can rename branches in the Design Lab.");
+            return;
+        }
         try {
             await axios.put(`http://localhost:5000/api/workshop/branches/${renaming.id}`, { name: renaming.value.trim() });
             toast.success('Branch renamed successfully');
@@ -722,6 +824,11 @@ const ProjectWorkshop = ({ project, onBack }) => {
     };
 
     const handleDeleteBranch = async (branch) => {
+        const isUserDesigner = (currentUser?.occupation || '').toUpperCase().includes('DESIGN');
+        if (isDesignProject && !isUserDesigner) {
+            toast.error("Read-Only: Only Designers can delete branches in the Design Lab.");
+            return;
+        }
         const confirmed = await toast.confirm(`Delete branch "${branch.name}"? All commits in this branch will be lost.`);
         if (!confirmed) return;
         try {
@@ -769,7 +876,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
             toast.success('Commit updated');
             setRenaming(null);
-            if (selectedBranch) await fetchCommits(selectedBranch.id);
+            await refreshCommits();
         } catch (err) {
             toast.error('Failed to update commit');
         } finally {
@@ -783,7 +890,8 @@ const ProjectWorkshop = ({ project, onBack }) => {
         try {
             await axios.delete(`http://localhost:5000/api/workshop/commits/${commit.id}`);
             toast.success('Commit deleted');
-            if (selectedBranch) await fetchCommits(selectedBranch.id);
+            await refreshCommits();
+            await fetchSchema(); // Re-fetch connections to update the graph
         } catch (err) { toast.error('Failed to delete commit'); }
     };
 
@@ -793,16 +901,21 @@ const ProjectWorkshop = ({ project, onBack }) => {
         try {
             const branchType = workspaceType === 'DESIGNER' ? 'DESIGN' : 'DEVELOP';
             const response = await axios.get(`http://localhost:5000/api/workshop/branches/${project.id}?type=${branchType}`);
-            setInternalBranches(response.data);
-            if (response.data.length > 0) {
+            const branches = response.data;
+            setInternalBranches(branches);
+
+            // Fetch ALL commits for the project to enable grouped view
+            const commitsRes = await axios.get(`http://localhost:5000/api/workshop/all-commits/${project.id}`);
+            setAllCommits(commitsRes.data);
+
+            if (branches.length > 0) {
                 // Try to find main branch, otherwise pick first
-                const mainBranch = response.data.find(b => b.name.toLowerCase() === 'main');
-                setSelectedBranch(mainBranch || response.data[0]);
+                const mainBranch = branches.find(b => b.name.toLowerCase() === 'main');
+                setSelectedBranch(mainBranch || branches[0]);
             } else {
                 setSelectedBranch(null);
-                setCommits([]);
             }
-        } catch (error) { console.error('Error fetching internal branches'); }
+        } catch (error) { console.error('Error fetching internal branches', error); }
     };
 
     const fetchCommits = async (branchId) => {
@@ -811,6 +924,18 @@ const ProjectWorkshop = ({ project, onBack }) => {
             setCommits(response.data);
         } catch (error) { console.error('Error fetching commits'); }
     };
+
+    const refreshCommits = async () => {
+        try {
+            if (selectedBranch) {
+                const response = await axios.get(`http://localhost:5000/api/workshop/commits/${selectedBranch.id}`);
+                setCommits(response.data);
+            }
+            const commitsRes = await axios.get(`http://localhost:5000/api/workshop/all-commits/${project.id}`);
+            setAllCommits(commitsRes.data);
+        } catch (error) { console.error('Error refreshing commits', error); }
+    };
+
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
     const [teamRoles, setTeamRoles] = useState({ hasDesigner: false, hasDeveloper: false });
@@ -863,8 +988,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                 else if (hasDev && !hasDes) setWorkspaceType('DEVELOPER');
                 // if mixed, keep current user's default workspace
 
-                if (hasDes && !hasDev) setViewMode('EXTERNAL');
-                else if (hasDev && !hasDes) setViewMode('INTERNAL');
+                if (hasDev && !hasDes) setViewMode('INTERNAL');
             } catch (err) { console.error(err); }
         };
         fetchTeamRoles();
@@ -884,6 +1008,10 @@ const ProjectWorkshop = ({ project, onBack }) => {
         setSelectedBranch(null);
         setInternalBranches([]);
         fetchInternalBranches();
+        // Designer lab always stays in INTERNAL mode (no SchemaCanvas)
+        if (workspaceType === 'DESIGNER') {
+            setViewMode('INTERNAL');
+        }
     }, [workspaceType]);
 
     const handleCreateBranch = async (e) => {
@@ -934,8 +1062,9 @@ const ProjectWorkshop = ({ project, onBack }) => {
             setNewCommitMsg('');
             setCommitFile(null);
             setAttachedLinks([]);
-            fetchCommits(selectedBranch.id);
+            refreshCommits(); // Refresh all
             toast.success('Update committed to timeline');
+
         } catch (error) { toast.error('Failed to add commit'); }
         finally { setLoading(false); }
     };
@@ -1051,65 +1180,67 @@ const ProjectWorkshop = ({ project, onBack }) => {
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: '10px', background: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
-                        <button
-                            onClick={() => setViewMode('INTERNAL')}
-                            style={{
-                                padding: '12px 20px',
-                                borderRadius: '12px',
-                                border: 'none',
-                                background: viewMode === 'INTERNAL' ? '#fff' : 'transparent',
-                                color: 'var(--secondary)',
-                                fontWeight: '800',
-                                fontSize: '0.7rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                boxShadow: viewMode === 'INTERNAL' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
-                                transition: 'all 0.3s'
-                            }}
-                        >
-                            <Cpu size={16} /> INTERNAL ENGINE
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (isDesignProject) {
-                                    setViewMode('EXTERNAL');
-                                } else {
-                                    if (githubData) setViewMode('EXTERNAL'); else analyzeGitHub();
-                                }
-                            }}
-                            disabled={!isDesignProject && (!project.github_url || analyzing)}
-                            style={{
-                                padding: '12px 20px',
-                                borderRadius: '12px',
-                                border: 'none',
-                                background: viewMode === 'EXTERNAL' ? '#fff' : 'transparent',
-                                color: (!isDesignProject && !project.github_url) ? 'var(--text-muted)' : 'var(--secondary)',
-                                fontWeight: '800',
-                                fontSize: '0.7rem',
-                                cursor: (!isDesignProject && !project.github_url) ? 'not-allowed' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                boxShadow: viewMode === 'EXTERNAL' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
-                                transition: 'all 0.3s',
-                                opacity: (!isDesignProject && !project.github_url) ? 0.4 : 1
-                            }}
-                        >
-                            {isDesignProject ? (
-                                <Activity size={16} />
-                            ) : (
-                                analyzing ? <RefreshCw size={16} className="animate-spin" /> : <GithubIcon size={16} />
-                            )}
-                            {isDesignProject ? 'ANALYZE SCHEMA' : (githubData ? 'EXTERNAL INTEL' : 'ANALYZE GITHUB')}
-                        </button>
-                    </div>
+                    {!isDesignProject && (
+                        <div style={{ display: 'flex', gap: '10px', background: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
+                            <button
+                                onClick={() => setViewMode('INTERNAL')}
+                                style={{
+                                    padding: '12px 20px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: viewMode === 'INTERNAL' ? '#fff' : 'transparent',
+                                    color: 'var(--secondary)',
+                                    fontWeight: '800',
+                                    fontSize: '0.7rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: viewMode === 'INTERNAL' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                <Cpu size={16} /> INTERNAL ENGINE
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (isDesignProject) {
+                                        setViewMode('EXTERNAL');
+                                    } else {
+                                        if (githubData) setViewMode('EXTERNAL'); else analyzeGitHub();
+                                    }
+                                }}
+                                disabled={!isDesignProject && (!project.github_url || analyzing)}
+                                style={{
+                                    padding: '12px 20px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: viewMode === 'EXTERNAL' ? '#fff' : 'transparent',
+                                    color: (!isDesignProject && !project.github_url) ? 'var(--text-muted)' : 'var(--secondary)',
+                                    fontWeight: '800',
+                                    fontSize: '0.7rem',
+                                    cursor: (!isDesignProject && !project.github_url) ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: viewMode === 'EXTERNAL' ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                                    transition: 'all 0.3s',
+                                    opacity: (!isDesignProject && !project.github_url) ? 0.4 : 1
+                                }}
+                            >
+                                {isDesignProject ? (
+                                    <Activity size={16} />
+                                ) : (
+                                    analyzing ? <RefreshCw size={16} className="animate-spin" /> : <GithubIcon size={16} />
+                                )}
+                                {isDesignProject ? 'ANALYZE SCHEMA' : (githubData ? 'EXTERNAL INTEL' : 'ANALYZE GITHUB')}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {isDesignProject ? (
+            {false ? (
                 viewMode === 'INTERNAL' ? (
                     <div className="animate-fade-in">
                         <div className="blend-card" style={{ padding: isMobile ? '25px' : '40px', marginBottom: '40px', boxShadow: '0 10px 40px rgba(0,0,0,0.02)' }}>
@@ -1133,7 +1264,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     placeholder="What's the update? (Add a message or link)"
                                                     style={{ flex: 1, padding: '15px 25px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem' }}
                                                 />
-                                                
+
                                                 {pendingSource && (
                                                     <div style={{ flex: 1, display: 'flex', gap: '10px', animation: 'fadeIn 0.3s' }}>
                                                         <input
@@ -1143,7 +1274,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                             autoFocus
                                                             style={{ flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid var(--accent)', background: '#fff', fontWeight: '600', fontSize: '0.85rem' }}
                                                         />
-                                                        <button 
+                                                        <button
                                                             onClick={() => {
                                                                 if (pendingUrl) {
                                                                     setAttachedLinks([...attachedLinks, { type: pendingSource.type, url: pendingUrl, label: pendingSource.label }]);
@@ -1155,7 +1286,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         >
                                                             <Check size={20} />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => { setPendingSource(null); setPendingUrl(''); }}
                                                             style={{ width: '55px', height: '55px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
@@ -1167,29 +1298,29 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
                                             {/* CONFIRMED LINK ICONS */}
                                             {!pendingSource && attachedLinks.map((link, i) => (
-                                                <div 
-                                                    key={i} 
+                                                <div
+                                                    key={i}
                                                     style={{ position: 'relative', width: '55px', height: '55px' }}
                                                     onMouseEnter={() => setHoveredLink(i)}
                                                     onMouseLeave={() => setHoveredLink(null)}
                                                 >
-                                                    <div style={{ 
-                                                        width: '100%', height: '100%', borderRadius: '15px', 
-                                                        background: 'var(--secondary)', color: 'white', 
+                                                    <div style={{
+                                                        width: '100%', height: '100%', borderRadius: '15px',
+                                                        background: 'var(--secondary)', color: 'white',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                         boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
                                                         transition: 'all 0.3s',
                                                         opacity: hoveredLink === i ? 0.2 : 1
                                                     }}>
-                                                        {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> : 
-                                                         link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
-                                                         link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
-                                                         link.type === 'terminal' ? <Terminal size={20} /> :
-                                                         <ExternalLink size={20} />}
+                                                        {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> :
+                                                            link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
+                                                                link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
+                                                                    link.type === 'terminal' ? <Terminal size={20} /> :
+                                                                        <ExternalLink size={20} />}
                                                     </div>
                                                     {hoveredLink === i && (
                                                         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
-                                                            <button 
+                                                            <button
                                                                 onClick={(e) => { e.stopPropagation(); window.open(link.url, '_blank'); }}
                                                                 style={{ flex: 1, border: 'none', background: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', transition: 'all 0.2s' }}
                                                                 title="Verify Link"
@@ -1198,7 +1329,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                             >
                                                                 <Eye size={18} />
                                                             </button>
-                                                            <button 
+                                                            <button
                                                                 onClick={(e) => { e.stopPropagation(); setAttachedLinks(attachedLinks.filter((_, idx) => idx !== i)); }}
                                                                 style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
                                                                 title="Delete"
@@ -1214,14 +1345,14 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
                                             {/* FILE ICON */}
                                             {!pendingSource && commitFile && (
-                                                <div 
+                                                <div
                                                     style={{ position: 'relative', width: '55px', height: '55px' }}
                                                     onMouseEnter={() => setHoveredLink('file')}
                                                     onMouseLeave={() => setHoveredLink(null)}
                                                 >
-                                                    <div style={{ 
-                                                        width: '100%', height: '100%', borderRadius: '15px', 
-                                                        background: 'var(--accent)', color: 'var(--secondary)', 
+                                                    <div style={{
+                                                        width: '100%', height: '100%', borderRadius: '15px',
+                                                        background: 'var(--accent)', color: 'var(--secondary)',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                         boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
                                                         transition: 'all 0.3s',
@@ -1234,7 +1365,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                             <div style={{ flex: 1, background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', fontSize: '0.6rem', fontWeight: '900', overflow: 'hidden', whiteSpace: 'nowrap', padding: '0 4px' }}>
                                                                 FILE
                                                             </div>
-                                                            <button 
+                                                            <button
                                                                 onClick={(e) => { e.stopPropagation(); setCommitFile(null); }}
                                                                 style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
                                                                 title="Remove File"
@@ -1247,7 +1378,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     )}
                                                 </div>
                                             )}
-                                            
+
                                             {!pendingSource && (
                                                 <div style={{ position: 'relative' }}>
                                                     <button
@@ -1267,7 +1398,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                             animation: 'slideUp 0.3s ease'
                                                         }}>
                                                             <p style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)', padding: '10px', letterSpacing: '1px' }}>INTEL SOURCE</p>
-                                                            
+
                                                             {isCurrentUserDesigner ? (
                                                                 <>
                                                                     <button onClick={() => { setPendingSource({ type: 'figma', label: 'Figma' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><FigmaIcon size={16} /> Figma Link</button>
@@ -1319,13 +1450,18 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                         key={i}
                                         d={`M ${line.x1} ${line.y1} C ${line.x1 + 50} ${line.y1}, ${line.x2 - 50} ${line.y2}, ${line.x2} ${line.y2}`}
                                         stroke="var(--accent)"
-                                        strokeWidth="4"
+                                        strokeWidth={line.type === 'implicit' ? "3" : "4"}
                                         fill="none"
-                                        strokeDasharray="8,8"
+                                        strokeDasharray={line.type === 'implicit' ? "5,5" : "none"}
                                         strokeLinecap="round"
-                                        style={{ filter: 'drop-shadow(0 4px 6px rgba(184, 168, 48, 0.4))', opacity: 0.8 }}
+                                        style={{
+                                            filter: 'drop-shadow(0 4px 10px rgba(230, 208, 76, 0.3))',
+                                            opacity: line.type === 'implicit' ? 0.6 : 1
+                                        }}
                                     />
                                 ))}
+
+
                                 {activeNode && (() => {
                                     const fromEl = document.getElementById(`node-${activeNode.id}-${activeNode.side}`);
                                     if (!fromEl || !gridRef.current) return null;
@@ -1343,141 +1479,207 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                             stroke="var(--accent)"
                                             strokeWidth="4"
                                             fill="none"
-                                            strokeDasharray="8,8"
                                             strokeLinecap="round"
-                                            style={{ filter: 'drop-shadow(0 4px 6px rgba(184, 168, 48, 0.4))', opacity: 0.8 }}
+                                            style={{ filter: 'drop-shadow(0 4px 10px rgba(230, 208, 76, 0.3))', opacity: 0.8 }}
                                         />
+
                                     );
                                 })()}
                             </svg>
 
-                            {/* Section 1: Connected Story */}
+                            {/* Main Project Reference - Anchored at the top */}
                             <div style={{ marginBottom: '60px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', opacity: 0.6 }}>
-                                    <Layers size={14} color="var(--accent)" />
-                                    <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary)' }}>CONNECTED INTELLIGENCE</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', opacity: 0.6 }}>
+                                    <Star size={14} color="var(--accent)" />
+                                    <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary)' }}>MAIN PROJECT REFERENCE</span>
                                     <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                                 </div>
-                                
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '80px', position: 'relative', zIndex: 15 }}>
-                                    {/* Principal Card: Always considered part of the main story if it has any connection */}
-                                    {(connections.some(c => c.fromId === 'principal' || c.toId === 'principal') || commits.length === 0) && (
-                                        <DesignCommitCard
-                                            key="principal"
-                                            isPrincipal={true}
-                                            activeNode={activeNode}
-                                            onNodeClick={handleNodeClick}
-                                            commit={{
-                                                id: 'principal',
-                                                message: isDesignProject ? project.figma_link : project.github_url,
-                                                user_id: project.user_id,
-                                                created_at: project.created_at,
-                                                author: project.username,
-                                                username: project.username,
-                                                file_url: null
-                                            }}
-                                            currentUser={currentUser}
-                                            onDelete={() => { }}
-                                            onEdit={() => { }}
-                                        />
-                                    )}
-
-                                    {commits.filter(c => c.message !== 'Genesis: Project Initialized' && connections.some(conn => conn.fromId === c.id || conn.toId === c.id)).map(commit => (
-                                        <DesignCommitCard
-                                            key={commit.id}
-                                            commit={commit}
-                                            activeNode={activeNode}
-                                            onNodeClick={handleNodeClick}
-                                            currentUser={currentUser}
-                                            onDelete={(c) => handleDeleteCommit(c)}
-                                            onEdit={(c) => {
-                                                const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
-                                                const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
-                                                setRenaming({ 
-                                                    type: 'commit', 
-                                                    id: c.id, 
-                                                    value: messageWithoutUrls, 
-                                                    file_url: c.file_url,
-                                                    attachedLinks: urls.map(url => {
-                                                        let type = 'link';
-                                                        if (url.includes('figma.com')) type = 'figma';
-                                                        else if (url.includes('xd.adobe.com')) type = 'xd';
-                                                        else if (url.includes('behance.net')) type = 'behance';
-                                                        else if (url.includes('github.com')) type = 'github';
-                                                        return { type, url };
-                                                    })
-                                                });
-                                            }}
-                                        />
-                                    ))}
+                                <div style={{ display: 'flex', gap: '40px', position: 'relative', zIndex: 15, padding: '10px 0' }}>
+                                    <DesignCommitCard
+                                        key="principal"
+                                        isPrincipal={true}
+                                        activeNode={activeNode}
+                                        onNodeClick={handleNodeClick}
+                                        rightConnected={connections.some(c => (c.fromId === 'principal' && c.fromSide === 'right') || (c.toId === 'principal' && c.toSide === 'right'))}
+                                        commit={{
+                                            id: 'principal',
+                                            message: isDesignProject ? project.figma_link : project.github_url,
+                                            user_id: project.user_id,
+                                            created_at: project.created_at,
+                                            author: project.username,
+                                            username: project.username,
+                                            file_url: null
+                                        }}
+                                        currentUser={currentUser}
+                                        onDelete={() => { }}
+                                        onEdit={() => { }}
+                                    />
                                 </div>
                             </div>
 
-                            {/* Section 2: Standalone Updates */}
-                            {((!connections.some(c => c.fromId === 'principal' || c.toId === 'principal') && commits.length > 0) || 
-                               commits.some(c => c.message !== 'Genesis: Project Initialized' && !connections.some(conn => conn.fromId === c.id || conn.toId === c.id))) && (
-                                <div style={{ marginTop: '80px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', opacity: 0.6 }}>
-                                        <Send size={14} color="var(--text-muted)" />
-                                        <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--text-muted)' }}>INDEPENDENT UPDATES</span>
-                                        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-                                    </div>
-                                    
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '80px', position: 'relative', zIndex: 15 }}>
-                                        {/* Principal Card if not connected */}
-                                        {!connections.some(c => c.fromId === 'principal' || c.toId === 'principal') && commits.length > 0 && (
-                                            <DesignCommitCard
-                                                key="principal"
-                                                isPrincipal={true}
-                                                activeNode={activeNode}
-                                                onNodeClick={handleNodeClick}
-                                                commit={{
-                                                    id: 'principal',
-                                                    message: isDesignProject ? project.figma_link : project.github_url,
-                                                    user_id: project.user_id,
-                                                    created_at: project.created_at,
-                                                    author: project.username,
-                                                    username: project.username,
-                                                    file_url: null
-                                                }}
-                                                currentUser={currentUser}
-                                                onDelete={() => { }}
-                                                onEdit={() => { }}
-                                            />
-                                        )}
+                            {(() => {
+                                const validBranchIds = new Set(internalBranches.map(b => b.id));
+                                const validCommits = allCommits.filter(c => c.message !== 'Genesis: Project Initialized' && validBranchIds.has(c.branch_id));
+                                const visited = new Set();
+                                const components = [];
 
-                                        {commits.filter(c => c.message !== 'Genesis: Project Initialized' && !connections.some(conn => conn.fromId === c.id || conn.toId === c.id)).map(commit => (
-                                            <DesignCommitCard
-                                                key={commit.id}
-                                                commit={commit}
-                                                activeNode={activeNode}
-                                                onNodeClick={handleNodeClick}
-                                                currentUser={currentUser}
-                                                onDelete={(c) => handleDeleteCommit(c)}
-                                                onEdit={(c) => {
-                                                    const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
-                                                    const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
-                                                    setRenaming({ 
-                                                        type: 'commit', 
-                                                        id: c.id, 
-                                                        value: messageWithoutUrls, 
-                                                        file_url: c.file_url,
-                                                        attachedLinks: urls.map(url => {
-                                                            let type = 'link';
-                                                            if (url.includes('figma.com')) type = 'figma';
-                                                            else if (url.includes('xd.adobe.com')) type = 'xd';
-                                                            else if (url.includes('behance.net')) type = 'behance';
-                                                            else if (url.includes('github.com')) type = 'github';
-                                                            return { type, url };
-                                                        })
-                                                    });
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                validCommits.forEach(commit => {
+                                    if (!visited.has(commit.id)) {
+                                        const comp = [];
+                                        const queue = [commit.id];
+                                        visited.add(commit.id);
+
+                                        while (queue.length > 0) {
+                                            const curr = queue.shift();
+                                            const currCommit = validCommits.find(c => c.id === curr);
+                                            if (currCommit) comp.push(currCommit);
+
+                                            connections.forEach(conn => {
+                                                if (conn.fromId === curr && !visited.has(conn.toId)) {
+                                                    visited.add(conn.toId);
+                                                    queue.push(conn.toId);
+                                                }
+                                                if (conn.toId === curr && !visited.has(conn.fromId)) {
+                                                    visited.add(conn.fromId);
+                                                    queue.push(conn.fromId);
+                                                }
+                                            });
+                                        }
+                                        if (comp.length > 0) components.push(comp);
+                                    }
+                                });
+
+                                const branchSequences = components.filter(comp => comp.length > 1);
+                                const orphanCommits = components.filter(comp => comp.length === 1).map(comp => comp[0]);
+
+                                // Sort within sequences by date ASC (Left to Right)
+                                branchSequences.forEach(seq => seq.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+                                orphanCommits.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+                                return (
+                                    <>
+                                        {/* CONNECTED BRANCH SEQUENCES */}
+                                        {branchSequences.map((seq, index) => {
+                                            const branchName = internalBranches.find(b => b.id === seq[0].branch_id)?.name || 'SEQUENCE';
+                                            return (
+                                                <div key={`seq-${index}`} style={{ marginBottom: '60px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', opacity: 0.6 }}>
+                                                        <GitBranch size={14} color="var(--accent)" />
+                                                        <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary)' }}>
+                                                            BRANCH: {branchName.toUpperCase()}
+                                                        </span>
+                                                        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                                                        <span style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)' }}>{seq.length} UPDATES</span>
+                                                    </div>
+
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        gap: '60px',
+                                                        position: 'relative',
+                                                        zIndex: 15,
+                                                        padding: '20px 0',
+                                                        overflowX: 'auto',
+                                                        paddingBottom: '40px',
+                                                        scrollbarWidth: 'none',
+                                                        msOverflowStyle: 'none'
+                                                    }}>
+                                                        {seq.map(commit => (
+                                                            <DesignCommitCard
+                                                                key={commit.id}
+                                                                commit={commit}
+                                                                activeNode={activeNode}
+                                                                onNodeClick={handleNodeClick}
+                                                                leftConnected={connections.some(c => (c.fromId === commit.id && c.fromSide === 'left') || (c.toId === commit.id && c.toSide === 'left'))}
+                                                                rightConnected={connections.some(c => (c.fromId === commit.id && c.fromSide === 'right') || (c.toId === commit.id && c.toSide === 'right'))}
+                                                                currentUser={currentUser}
+                                                                onDelete={(c) => handleDeleteCommit(c)}
+                                                                onEdit={(c) => {
+                                                                    const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
+                                                                    const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
+                                                                    setRenaming({
+                                                                        type: 'commit',
+                                                                        id: c.id,
+                                                                        value: messageWithoutUrls,
+                                                                        file_url: c.file_url,
+                                                                        attachedLinks: urls.map(url => {
+                                                                            let type = 'link';
+                                                                            if (url.includes('figma.com')) type = 'figma';
+                                                                            else if (url.includes('xd.adobe.com')) type = 'xd';
+                                                                            else if (url.includes('behance.net')) type = 'behance';
+                                                                            else if (url.includes('github.com')) type = 'github';
+                                                                            return { type, url };
+                                                                        })
+                                                                    });
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* UNBRANCHED (ISOLATED) COMMITS */}
+                                        {orphanCommits.length > 0 && (
+                                            <div style={{ marginBottom: '60px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px', opacity: 0.6 }}>
+                                                    <Layers size={14} color="var(--text-muted)" />
+                                                    <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--text-muted)' }}>
+                                                        INDEPENDENT UPDATES
+                                                    </span>
+                                                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                                                    <span style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)' }}>{orphanCommits.length} UPDATES</span>
+                                                </div>
+
+                                                <div style={{
+                                                    display: 'flex',
+                                                    gap: '60px',
+                                                    position: 'relative',
+                                                    zIndex: 15,
+                                                    padding: '20px 0',
+                                                    overflowX: 'auto',
+                                                    paddingBottom: '40px',
+                                                    scrollbarWidth: 'none',
+                                                    msOverflowStyle: 'none'
+                                                }}>
+                                                    {orphanCommits.map(commit => (
+                                                        <DesignCommitCard
+                                                            key={commit.id}
+                                                            commit={commit}
+                                                            activeNode={activeNode}
+                                                            onNodeClick={handleNodeClick}
+                                                            leftConnected={false}
+                                                            rightConnected={false}
+                                                            currentUser={currentUser}
+                                                            onDelete={(c) => handleDeleteCommit(c)}
+                                                            onEdit={(c) => {
+                                                                const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
+                                                                const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
+                                                                setRenaming({
+                                                                    type: 'commit',
+                                                                    id: c.id,
+                                                                    value: messageWithoutUrls,
+                                                                    file_url: c.file_url,
+                                                                    attachedLinks: urls.map(url => {
+                                                                        let type = 'link';
+                                                                        if (url.includes('figma.com')) type = 'figma';
+                                                                        else if (url.includes('xd.adobe.com')) type = 'xd';
+                                                                        else if (url.includes('behance.net')) type = 'behance';
+                                                                        else if (url.includes('github.com')) type = 'github';
+                                                                        return { type, url };
+                                                                    })
+                                                                });
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+
                         </div>
+
                     </div>
                 ) : (
                     <SchemaCanvas
@@ -1562,6 +1764,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                         return (
                                             <div
                                                 key={branch.id}
+                                                id={`branch-sidebar-node-${branch.id}`}
                                                 onClick={() => setSelectedBranch(branch)}
                                                 onContextMenu={(e) => handleBranchContextMenu(e, branch)}
                                                 style={{
@@ -1570,13 +1773,11 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     color: selectedBranch?.id === branch.id ? 'white' : 'var(--secondary)',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                                     transition: 'all 0.4s',
-                                                    border: isMyBranch && selectedBranch?.id !== branch.id ? '1px solid var(--accent)' : '1px solid transparent'
+                                                    border: isMyBranch && selectedBranch?.id !== branch.id ? '1px solid var(--accent)' : '1px solid transparent',
+                                                    position: 'relative'
                                                 }}
                                             >
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                                    <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-                                                        {branch.avatar ? <img src={branch.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <GitBranch size={16} style={{ margin: '7px' }} />}
-                                                    </div>
                                                     <div>
                                                         {renaming?.type === 'branch' && renaming?.id === branch.id ? (
                                                             <form onSubmit={(e) => { e.preventDefault(); handleRenameBranch(); }} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -1604,6 +1805,8 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     </div>
                                                 </div>
                                                 {selectedBranch?.id === branch.id && !renaming && <ChevronRight size={16} />}
+
+
                                             </div>
                                         );
                                     })}
@@ -1611,84 +1814,201 @@ const ProjectWorkshop = ({ project, onBack }) => {
                             </div>
 
                             {/* TIMELINE AREA */}
-                            <div>
+                            <div style={{ minWidth: 0 }}>
                                 {selectedBranch ? (
                                     <div className="animate-fade-in">
                                         <div className="blend-card" style={{ padding: isMobile ? '25px' : '40px', marginBottom: isMobile ? '30px' : '50px', boxShadow: '0 10px 40px rgba(0,0,0,0.02)' }}>
-                                            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '35px', gap: isMobile ? '15px' : '0' }}>
-                                                <h3 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '900', color: 'var(--secondary)', letterSpacing: '-1px' }}>{selectedBranch.name} <span style={{ color: 'var(--border)', fontWeight: '400' }}>/</span> Archive</h3>
-                                                <div style={{ padding: '6px 14px', background: '#f8fafc', borderRadius: '100px', fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)' }}>{commits.length} DIGITAL COMMITS</div>
-                                            </div>
+                                            {!isDesignProject ? (
+                                                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '35px', gap: isMobile ? '15px' : '0' }}>
+                                                    <h3 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '900', color: 'var(--secondary)', letterSpacing: '-1px' }}>{selectedBranch.name} <span style={{ color: 'var(--border)', fontWeight: '400' }}>/</span> Archive</h3>
+                                                    <div style={{ padding: '6px 14px', background: '#f8fafc', borderRadius: '100px', fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)' }}>{commits.length} DIGITAL COMMITS</div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '35px', gap: isMobile ? '15px' : '0' }}>
+                                                    <h3 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '900', color: 'var(--secondary)', letterSpacing: '-1px' }}>{selectedBranch.name}</h3>
+                                                    <div style={{ padding: '6px 14px', background: '#f8fafc', borderRadius: '100px', fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)' }}>{commits.length} CARDS</div>
+                                                </div>
+                                            )}
 
                                             {isCurrentUserDesigner === isDesignProject ? (
-                                                <>
-                                                    <form onSubmit={handleAddCommit} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '15px' }}>
-                                                        <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
+                                                <div style={{ position: 'relative' }}>
+                                                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center' }}>
+                                                        <div style={{ flex: pendingSource ? 1 : 2, position: 'relative', display: 'flex', gap: '15px' }}>
                                                             <input
-                                                                type="text"
-                                                                placeholder="Broadcast new mission update..."
                                                                 value={newCommitMsg}
                                                                 onChange={(e) => setNewCommitMsg(e.target.value)}
-                                                                style={{ borderRadius: '18px' }}
+                                                                placeholder="What's the update? (Add a message or link)"
+                                                                style={{ flex: 1, padding: '15px 25px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem' }}
                                                             />
-                                                        </div>
-                                                        <button type="submit" disabled={loading} className="btn-primary" style={{ width: isMobile ? '100%' : 'auto', padding: '15px 40px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                                                            <Send size={20} />
-                                                        </button>
 
-                                                        {/* FILE ATTACHMENT BUTTON */}
-                                                        <input
-                                                            id="commit-file-upload"
-                                                            type="file"
-                                                            accept={ALLOWED_FILE_TYPES}
-                                                            onChange={handleFileSelect}
-                                                            style={{ display: 'none' }}
-                                                        />
-                                                        {commitFile ? (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => { setCommitFile(null); document.getElementById('commit-file-upload').value = ''; }}
-                                                                title={`Remove: ${commitFile.name}`}
-                                                                style={{
-                                                                    width: isMobile ? '100%' : 'auto', padding: '15px 25px', borderRadius: '18px',
-                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                                                    background: '#fff1f2', border: '2px solid #fecdd3', color: '#e11d48',
-                                                                    cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', transition: 'all 0.3s'
-                                                                }}
+                                                            {pendingSource && (
+                                                                <div style={{ flex: 1, display: 'flex', gap: '10px', animation: 'fadeIn 0.3s' }}>
+                                                                    <input
+                                                                        value={pendingUrl}
+                                                                        onChange={(e) => setPendingUrl(e.target.value)}
+                                                                        placeholder={`Paste ${pendingSource.label} link...`}
+                                                                        autoFocus
+                                                                        style={{ flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid var(--accent)', background: '#fff', fontWeight: '600', fontSize: '0.85rem' }}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (pendingUrl) {
+                                                                                setAttachedLinks([...attachedLinks, { type: pendingSource.type, url: pendingUrl, label: pendingSource.label }]);
+                                                                                setPendingSource(null);
+                                                                                setPendingUrl('');
+                                                                            }
+                                                                        }}
+                                                                        style={{ width: '55px', height: '55px', borderRadius: '15px', border: 'none', background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                                    >
+                                                                        <Check size={20} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => { setPendingSource(null); setPendingUrl(''); }}
+                                                                        style={{ width: '55px', height: '55px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                                    >
+                                                                        <X size={20} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* CONFIRMED LINK ICONS */}
+                                                        {!pendingSource && attachedLinks.map((link, i) => (
+                                                            <div
+                                                                key={i}
+                                                                style={{ position: 'relative', width: '55px', height: '55px' }}
+                                                                onMouseEnter={() => setHoveredLink(i)}
+                                                                onMouseLeave={() => setHoveredLink(null)}
                                                             >
-                                                                <X size={18} />
-                                                                <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{commitFile.name}</span>
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => document.getElementById('commit-file-upload').click()}
-                                                                title="Attach file (images, documents — no videos)"
-                                                                className="btn-primary-file"
-                                                                style={{
-                                                                    width: isMobile ? '100%' : 'auto', padding: '15px 30px', borderRadius: '18px',
-                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-                                                                    cursor: 'pointer'
-                                                                }}
+                                                                <div style={{
+                                                                    width: '100%', height: '100%', borderRadius: '15px',
+                                                                    background: 'var(--secondary)', color: 'white',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                                                                    transition: 'all 0.3s',
+                                                                    opacity: hoveredLink === i ? 0.2 : 1
+                                                                }}>
+                                                                    {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> :
+                                                                        link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
+                                                                            link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
+                                                                                link.type === 'terminal' ? <Terminal size={20} /> :
+                                                                                    <ExternalLink size={20} />}
+                                                                </div>
+                                                                {hoveredLink === i && (
+                                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); window.open(link.url, '_blank'); }}
+                                                                            style={{ flex: 1, border: 'none', background: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', transition: 'all 0.2s' }}
+                                                                            title="Verify Link"
+                                                                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                                                        >
+                                                                            <Eye size={18} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); setAttachedLinks(attachedLinks.filter((_, idx) => idx !== i)); }}
+                                                                            style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
+                                                                            title="Delete"
+                                                                            onMouseEnter={(e) => e.currentTarget.style.background = '#fff'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.95)'}
+                                                                        >
+                                                                            <X size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+
+                                                        {/* FILE ICON */}
+                                                        {!pendingSource && commitFile && (
+                                                            <div
+                                                                style={{ position: 'relative', width: '55px', height: '55px' }}
+                                                                onMouseEnter={() => setHoveredLink('file')}
+                                                                onMouseLeave={() => setHoveredLink(null)}
                                                             >
-                                                                <File size={20} />
-                                                            </button>
+                                                                <div style={{
+                                                                    width: '100%', height: '100%', borderRadius: '15px',
+                                                                    background: 'var(--accent)', color: 'var(--secondary)',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                                                                    transition: 'all 0.3s',
+                                                                    opacity: hoveredLink === 'file' ? 0.2 : 1
+                                                                }}>
+                                                                    <Paperclip size={20} />
+                                                                </div>
+                                                                {hoveredLink === 'file' && (
+                                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
+                                                                        <div style={{ flex: 1, background: 'var(--accent)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', fontSize: '0.6rem', fontWeight: '900', overflow: 'hidden', whiteSpace: 'nowrap', padding: '0 4px' }}>
+                                                                            FILE
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); setCommitFile(null); }}
+                                                                            style={{ flex: 1, border: 'none', background: 'rgba(255,255,255,0.95)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px', borderTop: '1px solid #f1f5f9', transition: 'all 0.2s' }}
+                                                                            title="Remove File"
+                                                                            onMouseEnter={(e) => e.currentTarget.style.background = '#fff'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.95)'}
+                                                                        >
+                                                                            <X size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
-                                                    </form>
 
-                                                    {/* FILE ATTACHMENT PREVIEW */}
-                                                    {commitFile && (
-                                                        <div style={{
-                                                            marginTop: '12px', padding: '12px 18px', background: '#f0fdf4',
-                                                            borderRadius: '14px', border: '1px solid #bbf7d0',
-                                                            display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--secondary)'
-                                                        }}>
-                                                            <Paperclip size={14} style={{ color: '#16a34a', flexShrink: 0 }} />
-                                                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{commitFile.name}</span>
-                                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', flexShrink: 0 }}>{(commitFile.size / 1024).toFixed(1)} KB</span>
-                                                        </div>
-                                                    )}
-                                                </>
+                                                        {!pendingSource && (
+                                                            <div style={{ position: 'relative' }}>
+                                                                <button
+                                                                    onClick={() => setShowSourceSelector(!showSourceSelector)}
+                                                                    className="btn-secondary"
+                                                                    style={{ width: '55px', height: '55px', padding: 0, borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: (attachedLinks.length > 0 || commitFile) ? 'var(--accent)' : '#f8fafc', border: '1px solid var(--border)', cursor: 'pointer' }}
+                                                                    title="Select Intel Source"
+                                                                >
+                                                                    <Plus size={20} style={{ transform: showSourceSelector ? 'rotate(45deg)' : 'none', transition: 'all 0.3s' }} />
+                                                                </button>
+
+                                                                {showSourceSelector && (
+                                                                    <div style={{
+                                                                        position: 'absolute', bottom: '70px', right: 0, width: '220px',
+                                                                        background: '#fff', borderRadius: '18px', boxShadow: '0 15px 40px rgba(0,0,0,0.15)',
+                                                                        padding: '10px', zIndex: 100, border: '1px solid var(--border)',
+                                                                        animation: 'slideUp 0.3s ease'
+                                                                    }}>
+                                                                        <p style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)', padding: '10px', letterSpacing: '1px' }}>INTEL SOURCE</p>
+
+                                                                        {isDesignProject ? (
+                                                                            <>
+                                                                                <button onClick={() => { setPendingSource({ type: 'figma', label: 'Figma' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><FigmaIcon size={16} /> Figma Link</button>
+                                                                                <button onClick={() => { setPendingSource({ type: 'xd', label: 'Adobe XD' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><AdobeXDIcon size={16} /> Adobe XD</button>
+                                                                                <button onClick={() => { setPendingSource({ type: 'behance', label: 'Behance' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><BehanceIcon size={16} /> Behance Link</button>
+                                                                                <button onClick={() => { document.getElementById('commit-file-upload-design').click(); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><Paperclip size={16} /> Local File</button>
+                                                                                <button onClick={() => { setPendingSource({ type: 'link', label: 'Link' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><ExternalLink size={16} /> General Link</button>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <button onClick={() => { setPendingSource({ type: 'link', label: 'GitHub Repo' }); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><GithubIcon size={16} /> GitHub Repo</button>
+                                                                                <button onClick={() => { document.getElementById('commit-file-upload-design').click(); setShowSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><Paperclip size={16} /> Local File</button>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        <button onClick={handleAddCommit} className="btn-primary" style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <Send size={18} /> COMMIT
+                                                        </button>
+                                                    </div>
+
+                                                    <input
+                                                        id="commit-file-upload-design"
+                                                        type="file"
+                                                        accept={ALLOWED_FILE_TYPES}
+                                                        onChange={(e) => {
+                                                            if (e.target.files?.[0]) setCommitFile(e.target.files[0]);
+                                                        }}
+                                                        style={{ display: 'none' }}
+                                                    />
+                                                </div>
                                             ) : (
                                                 <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.8rem', border: '1px dashed var(--border)' }}>
                                                     Read-Only: {isDesignProject ? 'Only Designers can broadcast to the Design Lab.' : 'Only Developers can broadcast to the Development Terminal.'}
@@ -1697,124 +2017,163 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                         </div>
 
                                         <div style={{ padding: isMobile ? '0' : '0 30px' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '40px' : '40px', position: 'relative' }}>
-                                                {/* CENTRAL CONNECTING LINE */}
-                                                {!isMobile && (
-                                                    <div style={{
-                                                        position: 'absolute',
-                                                        left: '170px',
-                                                        top: '0',
-                                                        bottom: '0',
-                                                        width: '2px',
-                                                        background: 'var(--border)',
-                                                        opacity: 0.2
-                                                    }}></div>
-                                                )}
+                                            {isDesignProject ? (
+                                                <div>
+                                                    <div style={{ display: 'flex', gap: '60px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '0 0 20px 20px', width: '100%', paddingBottom: '40px' }}>
+                                                        {(() => {
+                                                            const mainCommits = allCommits.filter(c => c.branch_id === selectedBranch?.id && c.message !== 'Genesis: Project Initialized');
 
-                                                {commits.filter(c => c.message !== 'Genesis: Project Initialized').map((commit, idx) => {
-                                                    const isMyCommit = commit.user_id === currentUser.id;
-                                                    const isExternal = !!commit.sha;
+                                                            const renderCard = (commit) => (
+                                                                <DesignCommitCard
+                                                                    key={commit.id}
+                                                                    commit={commit}
+                                                                    currentUser={currentUser}
+                                                                    onDelete={(c) => handleDeleteCommit(c)}
+                                                                    onEdit={(c) => {
+                                                                        const urls = c.message.match(/(https?:\/\/[^\s]+)/g) || [];
+                                                                        const messageWithoutUrls = c.message.replace(/(https?:\/\/[^\s]+)/g, '').trim();
+                                                                        setRenaming({
+                                                                            type: 'commit',
+                                                                            id: c.id,
+                                                                            value: messageWithoutUrls,
+                                                                            file_url: c.file_url,
+                                                                            attachedLinks: urls.map(url => {
+                                                                                let type = 'link';
+                                                                                if (url.includes('figma.com')) type = 'figma';
+                                                                                else if (url.includes('xd.adobe.com')) type = 'xd';
+                                                                                else if (url.includes('behance.net')) type = 'behance';
+                                                                                else if (url.includes('github.com')) type = 'github';
+                                                                                return { type, url };
+                                                                            })
+                                                                        });
+                                                                    }}
+                                                                />
+                                                            );
 
-                                                    return (
-                                                        <div key={commit.id} onContextMenu={(e) => handleCommitContextMenu(e, commit)} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '15px' : '40px', position: 'relative' }}>
-                                                            {!isMobile && (
-                                                                <div style={{ width: '150px', textAlign: 'right', paddingTop: '35px' }}>
-                                                                    <p style={{ fontSize: '0.75rem', fontWeight: '950', color: 'var(--secondary)', letterSpacing: '0.5px' }}>
-                                                                        {new Date(commit.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                    </p>
-                                                                    <p style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)', marginTop: '6px', textTransform: 'uppercase' }}>
-                                                                        {new Date(commit.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                                    </p>
-                                                                </div>
-                                                            )}
+                                                            return mainCommits.map(renderCard);
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '40px' : '40px', position: 'relative' }}>
+                                                    {/* CENTRAL CONNECTING LINE */}
+                                                    {!isMobile && (
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            left: '170px',
+                                                            top: '0',
+                                                            bottom: '0',
+                                                            width: '2px',
+                                                            background: 'var(--border)',
+                                                            opacity: 0.2
+                                                        }}></div>
+                                                    )}
 
-                                                            {/* TIMELINE NODE (CIRCLE) - Positioned relative to the row gap */}
-                                                            {!isMobile && (
-                                                                <div style={{
-                                                                    position: 'absolute',
-                                                                    left: '166px',
-                                                                    top: '40px',
-                                                                    width: '10px',
-                                                                    height: '10px',
-                                                                    borderRadius: '50%',
-                                                                    background: 'var(--accent)',
-                                                                    border: '2px solid white',
-                                                                    zIndex: 2,
-                                                                    boxShadow: '0 0 10px rgba(230,208,76,0.4)'
-                                                                }}></div>
-                                                            )}
+                                                    {commits.filter(c => c.message !== 'Genesis: Project Initialized').map((commit, idx) => {
+                                                        const isMyCommit = commit.user_id === currentUser.id;
+                                                        const isExternal = !!commit.sha;
 
-                                                            <div style={{ position: 'relative', flex: 1 }}>
-                                                                <div style={{
-                                                                    background: isMyCommit ? '#ffffff' : 'rgba(0,0,0,0.01)',
-                                                                    padding: isMobile ? '25px' : '30px 40px',
-                                                                    borderRadius: '24px',
-                                                                    border: isMyCommit ? '1px solid rgba(230,208,76,0.3)' : '1px solid rgba(0,0,0,0.04)',
-                                                                    boxShadow: isMyCommit ? '0 15px 40px rgba(230,208,76,0.12)' : 'none',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: isMobile ? '20px' : '30px'
-                                                                }}>
-                                                                    <div style={{ width: isMobile ? '60px' : '80px', height: isMobile ? '60px' : '80px', borderRadius: '20px', overflow: 'hidden', flexShrink: 0, border: '4px solid #f8fafc', boxShadow: '0 8px 20px rgba(0,0,0,0.05)' }}>
-                                                                        {commit.avatar ? (
-                                                                            <img src={commit.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                        ) : (
-                                                                            <div style={{ width: '100%', height: '100%', background: isExternal ? 'var(--accent-dark)' : 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '900', fontSize: isMobile ? '1.5rem' : '2rem' }}>
-                                                                                {(commit.author?.[0] || commit.username?.[0] || 'U').toUpperCase()}
-                                                                            </div>
-                                                                        )}
+                                                        return (
+                                                            <div key={commit.id} onContextMenu={(e) => handleCommitContextMenu(e, commit)} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '15px' : '40px', position: 'relative' }}>
+                                                                {!isMobile && (
+                                                                    <div style={{ width: '150px', textAlign: 'right', paddingTop: '35px' }}>
+                                                                        <p style={{ fontSize: '0.75rem', fontWeight: '950', color: 'var(--secondary)', letterSpacing: '0.5px' }}>
+                                                                            {new Date(commit.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        </p>
+                                                                        <p style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)', marginTop: '6px', textTransform: 'uppercase' }}>
+                                                                            {new Date(commit.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                        </p>
                                                                     </div>
+                                                                )}
 
-                                                                    <div style={{ flex: 1 }}>
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                                <span style={{ fontSize: '0.65rem', fontWeight: '950', color: 'var(--accent-dark)', letterSpacing: '1.5px' }}>{(commit.author || commit.username || 'UNKNOWN').toUpperCase()}</span>
-                                                                                {isExternal && <span style={{ padding: '3px 8px', background: 'var(--secondary)', color: 'white', borderRadius: '6px', fontSize: '0.5rem', fontWeight: '900', letterSpacing: '0.5px' }}>GITHUB INTEL</span>}
-                                                                            </div>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                                                {isExternal && <span style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)', fontFamily: 'monospace', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{commit.sha.substring(0, 7)}</span>}
-                                                                                {isMobile && <span style={{ fontSize: '0.6rem', fontWeight: '700', color: 'var(--text-muted)' }}>{new Date(commit.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-                                                                            <div style={{ flex: 1 }}>
-                                                                                <p style={{ fontWeight: '850', color: 'var(--secondary)', fontSize: isMobile ? '1.1rem' : '1.35rem', lineHeight: '1.5', margin: 0, letterSpacing: '-0.5px', wordBreak: 'break-word' }}>{linkifyText(commit.message)}</p>
-                                                                            </div>
+                                                                {/* TIMELINE NODE (CIRCLE) - Positioned relative to the row gap */}
+                                                                {!isMobile && (
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        left: '166px',
+                                                                        top: '40px',
+                                                                        width: '10px',
+                                                                        height: '10px',
+                                                                        borderRadius: '50%',
+                                                                        background: 'var(--accent)',
+                                                                        border: '2px solid white',
+                                                                        zIndex: 2,
+                                                                        boxShadow: '0 0 10px rgba(230,208,76,0.4)'
+                                                                    }}></div>
+                                                                )}
 
-                                                                            {/* RIGHT-CENTER ACTION LINK */}
-                                                                            {commit.file_url && (
-                                                                                <div style={{ flexShrink: 0 }}>
-                                                                                    <button
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            if (isImageFile(commit.file_url)) setFullscreenImage(commit.file_url);
-                                                                                            else window.open(commit.file_url, '_blank');
-                                                                                        }}
-                                                                                        style={{
-                                                                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                                                                            padding: '12px 20px', background: '#f8fafc',
-                                                                                            borderRadius: '14px', border: '1px solid #e2e8f0',
-                                                                                            cursor: 'pointer', color: 'var(--secondary)',
-                                                                                            fontWeight: '800', fontSize: '0.7rem',
-                                                                                            transition: 'all 0.3s', letterSpacing: '0.5px'
-                                                                                        }}
-                                                                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.05)'; }}
-                                                                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; }}
-                                                                                    >
-                                                                                        {isImageFile(commit.file_url) ? <Image size={16} /> : <FileText size={16} />}
-                                                                                        <span>{isImageFile(commit.file_url) ? 'VIEW INTEL' : 'DOWNLOAD FILE'}</span>
-                                                                                        <ExternalLink size={12} style={{ opacity: 0.3 }} />
-                                                                                    </button>
+                                                                <div style={{ position: 'relative', flex: 1 }}>
+                                                                    <div style={{
+                                                                        background: isMyCommit ? '#ffffff' : 'rgba(0,0,0,0.01)',
+                                                                        padding: isMobile ? '25px' : '30px 40px',
+                                                                        borderRadius: '24px',
+                                                                        border: isMyCommit ? '1px solid rgba(230,208,76,0.3)' : '1px solid rgba(0,0,0,0.04)',
+                                                                        boxShadow: isMyCommit ? '0 15px 40px rgba(230,208,76,0.12)' : 'none',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: isMobile ? '20px' : '30px'
+                                                                    }}>
+                                                                        <div style={{ width: isMobile ? '60px' : '80px', height: isMobile ? '60px' : '80px', borderRadius: '20px', overflow: 'hidden', flexShrink: 0, border: '4px solid #f8fafc', boxShadow: '0 8px 20px rgba(0,0,0,0.05)' }}>
+                                                                            {commit.avatar ? (
+                                                                                <img src={commit.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                            ) : (
+                                                                                <div style={{ width: '100%', height: '100%', background: isExternal ? 'var(--accent-dark)' : 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '900', fontSize: isMobile ? '1.5rem' : '2rem' }}>
+                                                                                    {(commit.author?.[0] || commit.username?.[0] || 'U').toUpperCase()}
                                                                                 </div>
                                                                             )}
+                                                                        </div>
+
+                                                                        <div style={{ flex: 1 }}>
+                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                    <span style={{ fontSize: '0.65rem', fontWeight: '950', color: 'var(--accent-dark)', letterSpacing: '1.5px' }}>{(commit.author || commit.username || 'UNKNOWN').toUpperCase()}</span>
+                                                                                    {isExternal && <span style={{ padding: '3px 8px', background: 'var(--secondary)', color: 'white', borderRadius: '6px', fontSize: '0.5rem', fontWeight: '900', letterSpacing: '0.5px' }}>GITHUB INTEL</span>}
+                                                                                </div>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                                                    {isExternal && <span style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)', fontFamily: 'monospace', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{commit.sha.substring(0, 7)}</span>}
+                                                                                    {isMobile && <span style={{ fontSize: '0.6rem', fontWeight: '700', color: 'var(--text-muted)' }}>{new Date(commit.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
+                                                                                <div style={{ flex: 1 }}>
+                                                                                    <p style={{ fontWeight: '850', color: 'var(--secondary)', fontSize: isMobile ? '1.1rem' : '1.35rem', lineHeight: '1.5', margin: 0, letterSpacing: '-0.5px', wordBreak: 'break-word' }}>{linkifyText(commit.message)}</p>
+                                                                                </div>
+
+                                                                                {/* RIGHT-CENTER ACTION LINK */}
+                                                                                {commit.file_url && (
+                                                                                    <div style={{ flexShrink: 0 }}>
+                                                                                        <button
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                if (isImageFile(commit.file_url)) setFullscreenImage(commit.file_url);
+                                                                                                else window.open(commit.file_url, '_blank');
+                                                                                            }}
+                                                                                            style={{
+                                                                                                display: 'flex', alignItems: 'center', gap: '10px',
+                                                                                                padding: '12px 20px', background: '#f8fafc',
+                                                                                                borderRadius: '14px', border: '1px solid #e2e8f0',
+                                                                                                cursor: 'pointer', color: 'var(--secondary)',
+                                                                                                fontWeight: '800', fontSize: '0.7rem',
+                                                                                                transition: 'all 0.3s', letterSpacing: '0.5px'
+                                                                                            }}
+                                                                                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.05)'; }}
+                                                                                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; }}
+                                                                                        >
+                                                                                            {isImageFile(commit.file_url) ? <Image size={16} /> : <FileText size={16} />}
+                                                                                            <span>{isImageFile(commit.file_url) ? 'VIEW INTEL' : 'DOWNLOAD FILE'}</span>
+                                                                                            <ExternalLink size={12} style={{ opacity: 0.3 }} />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (
@@ -1827,22 +2186,42 @@ const ProjectWorkshop = ({ project, onBack }) => {
                         </>
                     ) : (
                         <div className="animate-fade-in" style={{ gridColumn: '1 / -1' }}>
-                            <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                                <div>
-                                    <h3 style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--secondary)', letterSpacing: '-1px' }}>External <span style={{ color: 'var(--accent-dark)' }}>Intel Graph</span></h3>
-                                    <p style={{ color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>Visualizing {githubData?.owner}/{githubData?.repo} mission structure.</p>
-                                </div>
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                    <button
-                                        onClick={analyzeGitHub}
-                                        disabled={analyzing}
-                                        style={{ background: 'transparent', border: '1px solid var(--border)', padding: '12px 25px', borderRadius: '100px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '800', fontSize: '0.7rem', color: 'var(--secondary)' }}
-                                    >
-                                        <RefreshCw size={14} className={analyzing ? "animate-spin" : ""} /> RE-ANALYZE
-                                    </button>
-                                </div>
-                            </div>
-                            {githubData && <GitGraph data={githubData} />}
+                            {isDesignProject ? (
+                                <SchemaCanvas
+                                    commits={commits}
+                                    project={project}
+                                    connections={connections}
+                                    setConnections={setConnections}
+                                    activeNode={activeNode}
+                                    onNodeClick={(id, side, e) => {
+                                        const canvasEl = document.getElementById('schema-canvas-wrapper');
+                                        handleNodeClick(id, side, e, canvasEl ? canvasEl.getBoundingClientRect() : null);
+                                    }}
+                                    mousePos={mousePos}
+                                    setMousePos={setMousePos}
+                                    currentUser={currentUser}
+                                    isDesignProject={isDesignProject}
+                                />
+                            ) : (
+                                <>
+                                    <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--secondary)', letterSpacing: '-1px' }}>External <span style={{ color: 'var(--accent-dark)' }}>Intel Graph</span></h3>
+                                            <p style={{ color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>Visualizing {githubData?.owner}/{githubData?.repo} mission structure.</p>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '15px' }}>
+                                            <button
+                                                onClick={analyzeGitHub}
+                                                disabled={analyzing}
+                                                style={{ background: 'transparent', border: '1px solid var(--border)', padding: '12px 25px', borderRadius: '100px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '800', fontSize: '0.7rem', color: 'var(--secondary)' }}
+                                            >
+                                                <RefreshCw size={14} className={analyzing ? "animate-spin" : ""} /> RE-ANALYZE
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {githubData && <GitGraph data={githubData} />}
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
@@ -1977,7 +2356,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                         <form onSubmit={(e) => { e.preventDefault(); handleEditCommit(); }}>
                             <div className="input-group" style={{ marginBottom: '30px' }}>
                                 <label style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '2px', color: 'var(--secondary, #004842)', opacity: 0.4, marginBottom: '10px', display: 'block' }}>COMMIT MESSAGE</label>
-                                
+
                                 <div style={{ position: 'relative' }}>
                                     <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', alignItems: 'center' }}>
                                         <div style={{ flex: editPendingSource ? 1 : 2, position: 'relative', display: 'flex', gap: '15px' }}>
@@ -1988,7 +2367,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                 placeholder="Update message..."
                                                 style={{ flex: 1, padding: '15px 25px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', fontWeight: '600', fontSize: '0.9rem', minHeight: '80px', resize: 'vertical' }}
                                             />
-                                            
+
                                             {editPendingSource && (
                                                 <div style={{ flex: 1, display: 'flex', gap: '10px', animation: 'fadeIn 0.3s' }}>
                                                     <input
@@ -1998,7 +2377,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         autoFocus
                                                         style={{ flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid var(--accent)', background: '#fff', fontWeight: '600', fontSize: '0.85rem' }}
                                                     />
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         onClick={() => {
                                                             if (editPendingUrl) {
@@ -2014,7 +2393,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     >
                                                         <Check size={20} />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         onClick={() => { setEditPendingSource(null); setEditPendingUrl(''); }}
                                                         style={{ width: '55px', height: '80px', borderRadius: '15px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -2027,29 +2406,29 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
                                         {/* CONFIRMED LINK ICONS */}
                                         {!editPendingSource && renaming.attachedLinks?.map((link, i) => (
-                                            <div 
-                                                key={i} 
+                                            <div
+                                                key={i}
                                                 style={{ position: 'relative', width: '55px', height: '80px' }}
                                                 onMouseEnter={() => setEditHoveredLink(i)}
                                                 onMouseLeave={() => setEditHoveredLink(null)}
                                             >
-                                                <div style={{ 
-                                                    width: '100%', height: '100%', borderRadius: '15px', 
-                                                    background: 'var(--secondary)', color: 'white', 
+                                                <div style={{
+                                                    width: '100%', height: '100%', borderRadius: '15px',
+                                                    background: 'var(--secondary)', color: 'white',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                     boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
                                                     transition: 'all 0.3s',
                                                     opacity: editHoveredLink === i ? 0.2 : 1
                                                 }}>
-                                                    {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> : 
-                                                     link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
-                                                     link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
-                                                     link.type === 'terminal' ? <Terminal size={20} /> :
-                                                     <ExternalLink size={20} />}
+                                                    {link.type === 'figma' ? <FigmaIcon size={20} color="white" /> :
+                                                        link.type === 'xd' ? <AdobeXDIcon size={20} color="white" /> :
+                                                            link.type === 'behance' ? <BehanceIcon size={20} color="white" /> :
+                                                                link.type === 'terminal' ? <Terminal size={20} /> :
+                                                                    <ExternalLink size={20} />}
                                                 </div>
                                                 {editHoveredLink === i && (
                                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.2s', zIndex: 10 }}>
-                                                        <button 
+                                                        <button
                                                             type="button"
                                                             onClick={(e) => { e.stopPropagation(); window.open(link.url, '_blank'); }}
                                                             style={{ flex: 1, border: 'none', background: 'var(--secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px', transition: 'all 0.2s' }}
@@ -2059,10 +2438,10 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         >
                                                             <Eye size={18} />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             type="button"
-                                                            onClick={(e) => { 
-                                                                e.stopPropagation(); 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 setRenaming({
                                                                     ...renaming,
                                                                     attachedLinks: renaming.attachedLinks.filter((_, idx) => idx !== i)
@@ -2079,7 +2458,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                 )}
                                             </div>
                                         ))}
-                                        
+
                                         {!editPendingSource && (
                                             <div style={{ position: 'relative' }}>
                                                 <button
@@ -2100,7 +2479,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                         animation: 'slideUp 0.3s ease'
                                                     }}>
                                                         <p style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--text-muted)', padding: '10px', letterSpacing: '1px' }}>INTEL SOURCE</p>
-                                                        
+
                                                         {isCurrentUserDesigner ? (
                                                             <>
                                                                 <button type="button" onClick={() => { setEditPendingSource({ type: 'figma', label: 'Figma' }); setShowEditSourceSelector(false); }} style={sourceBtnStyle} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}><FigmaIcon size={16} /> Figma Link</button>

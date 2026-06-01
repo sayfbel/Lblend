@@ -1,16 +1,16 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
-const db = mysql.createConnection({
+const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-db.connect((err) => {
-    if (err) console.error('Shared DB Connection failed:', err);
-    else console.log('Shared Database connection established.');
-});
-
-module.exports = db;
+// Use promise-based pool for easier async/await if needed, 
+// but keeping callback compatibility for now.
+module.exports = pool;

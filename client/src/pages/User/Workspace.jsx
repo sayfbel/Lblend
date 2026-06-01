@@ -115,6 +115,21 @@ const Workspace = () => {
         } catch (err) { toast.error('Clearance Grant Failure'); }
     };
 
+    const handleLeaveProject = async (project) => {
+        const confirmed = await toast.confirm(`Leave collaboration project "${project.project_name}"?`);
+        if (!confirmed) return;
+        try {
+            await axios.post('http://localhost:5000/api/intelligence/leave', {
+                announcement_id: project.id,
+                user_id: user.id
+            });
+            toast.success(`Successfully left collaboration project "${project.project_name}"`);
+            fetchManifest();
+        } catch (err) {
+            toast.error('Failed to leave the collaboration project');
+        }
+    };
+
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
 
     useEffect(() => {
@@ -235,6 +250,34 @@ const Workspace = () => {
                                         <button onClick={() => setEditingProject(project)} style={{ background: '#fff', border: '1px solid #e2e8f0', width: '48px', height: '48px', borderRadius: '12px', cursor: 'pointer', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent)'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}><Edit2 size={18} /></button>
                                         <button onClick={() => setDeletingProject(project)} style={{ background: '#fff', border: '1px solid #e2e8f0', width: '48px', height: '48px', borderRadius: '12px', cursor: 'pointer', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#e11d48'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}><Trash2 size={18} /></button>
                                     </div>
+                                )}
+                                {!isOwner && (
+                                    <button 
+                                        onClick={() => handleLeaveProject(project)} 
+                                        style={{ 
+                                            background: '#fff', 
+                                            border: '1px solid #fecdd3', 
+                                            width: '48px', 
+                                            height: '48px', 
+                                            borderRadius: '12px', 
+                                            cursor: 'pointer', 
+                                            color: '#e11d48', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            fontWeight: '800',
+                                            fontSize: '0.7rem',
+                                            letterSpacing: '0.5px',
+                                            transition: 'all 0.3s',
+                                            whiteSpace: 'nowrap'
+                                        }} 
+                                        title="Leave Collaboration" 
+                                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#e11d48'; e.currentTarget.style.background = '#fff1f2'; }} 
+                                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#fecdd3'; e.currentTarget.style.background = '#fff'; }}
+                                    >
+                                        <X size={16} /> LEAVE
+                                    </button>
                                 )}
                             </div>
                         </div>

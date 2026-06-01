@@ -26,19 +26,16 @@ app.use(session({ secret: 'session-secret', resave: false, saveUninitialized: tr
 app.use(passport.initialize());
 app.use(passport.session());
 
-// MySQL Connection
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME
-});
+// MySQL Connection Pool
+const db = require('./db');
 
-db.connect((err) => {
+// Check connection and run init queries
+db.getConnection((err, connection) => {
     if (err) {
-        console.error('Database connection failed:', err);
+        console.error('Database connection failed:', err.message);
     } else {
         console.log('Connected to MySQL Database: ' + process.env.DB_NAME);
+        connection.release();
         
         // Auto-update schema for new features
         const queries = [
@@ -47,7 +44,7 @@ db.connect((err) => {
         
         queries.forEach(q => db.query(q, (e) => e && console.error('DB Init Error:', e.message)));
         
-        // Use separate query for columns since ALTER TABLE IF NOT EXISTS isn't standard in older MySQL
+        // Use separate query for columns
         db.query("SHOW COLUMNS FROM announcements LIKE 'pos_x'", (err, res) => {
             if (res && res.length === 0) {
                 db.query("ALTER TABLE announcements ADD COLUMN pos_x FLOAT DEFAULT 0");
@@ -369,6 +366,8 @@ app.put('/api/workshop/commits/:id', workshopController.updateCommit);
 app.delete('/api/workshop/commits/:id', workshopController.deleteCommit);
 app.post('/api/workshop/schema', workshopController.saveSchema);
 app.get('/api/workshop/schema/:projectId', workshopController.getSchemaConnections);
+app.get('/api/workshop/all-commits/:projectId', workshopController.getAllProjectCommits);
+
 
 // GitHub Analysis
 app.get('/api/github/analyze', githubController.analyzeRepo);
@@ -390,31 +389,47 @@ app.post('/api/figma/oembed', async (req, res) => {
 
 // Design Platform Metadata Endpoint (Figma, XD, Behance, etc.)
 app.post('/api/design/metadata', async (req, res) => {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+
     try {
-        const { url } = req.body;
-        if (!url) return res.status(400).json({ error: 'URL is required' });
         const axios = require('axios');
+        console.log(`Scraping metadata for: ${url}`);
         
         // Use a real browser user-agent to avoid being blocked by Behance/others
-        const xdRes = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } });
+        const xdRes = await axios.get(url, { 
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+            timeout: 8000 // 8 second timeout
+        });
         const html = xdRes.data;
         
         // Extract og:image
         const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
         const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
         
+        if (!imageMatch && !titleMatch) {
+            console.warn(`No metadata found for URL: ${url}`);
+        }
+
         res.status(200).json({
             thumbnail_url: imageMatch ? imageMatch[1] : null,
             title: titleMatch ? titleMatch[1] : 'Design Project'
         });
     } catch (error) {
-        console.error('Design Metadata Error:', error.message);
-        res.status(400).json({ error: 'Failed to fetch design metadata.' });
+        console.error(`Design Metadata Error [${url}]:`, error.message);
+        // Return 200 with nulls instead of 400 to prevent frontend crashes, 
+        // but log it so we know it's failing.
+        res.status(200).json({
+            thumbnail_url: null,
+            title: 'Design Project (Metadata unavailable)',
+            error: error.message
+        });
     }
 });
 
 // Intelligence (Communication Hub)
 app.post('/api/intelligence/join', intelligenceController.joinProject);
+app.post('/api/intelligence/leave', intelligenceController.leaveProject);
 app.get('/api/intelligence/projects/:userId', intelligenceController.getUserProjects);
 app.get('/api/intelligence/members/:projectId', intelligenceController.getProjectMembers);
 app.get('/api/intelligence/requests/:projectId', intelligenceController.getPendingRequests);

@@ -20,6 +20,14 @@ exports.joinProject = (req, res) => {
     });
 };
 
+exports.leaveProject = (req, res) => {
+    const { announcement_id, user_id } = req.body;
+    db.query("DELETE FROM project_members WHERE announcement_id = ? AND user_id = ?", [announcement_id, user_id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).send({ message: "Left collaboration successfully." });
+    });
+};
+
 exports.getUserProjects = (req, res) => {
     const { userId } = req.params;
     const query = `

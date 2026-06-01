@@ -149,58 +149,133 @@ exports.updateCommit = (req, res) => {
 
 exports.deleteCommit = (req, res) => {
     const { id } = req.params;
-    db.query("DELETE FROM commits WHERE id = ?", [id], (err) => {
+    
+    db.getConnection((err, connection) => {
         if (err) return res.status(500).send(err);
-        res.status(200).send({ message: "Commit deleted!" });
+        
+        connection.beginTransaction(err => {
+            if (err) {
+                connection.release();
+                return res.status(500).send(err);
+            }
+            
+            // Find incoming connection to this commit
+            connection.query("SELECT * FROM commit_connections WHERE to_commit_id = ?", [id], (err, incoming) => {
+                if (err) return connection.rollback(() => { connection.release(); res.status(500).send(err); });
+                
+                // Find outgoing connection from this commit
+                connection.query("SELECT * FROM commit_connections WHERE from_commit_id = ?", [id], (err, outgoing) => {
+                    if (err) return connection.rollback(() => { connection.release(); res.status(500).send(err); });
+                    
+                    const deleteConnections = (callback) => {
+                        connection.query("DELETE FROM commit_connections WHERE from_commit_id = ? OR to_commit_id = ?", [id, id], (err) => {
+                            if (err) return connection.rollback(() => { connection.release(); res.status(500).send(err); });
+                            callback();
+                        });
+                    };
+                    
+                    deleteConnections(() => {
+                        const stitchConnections = (callback) => {
+                            if (incoming.length > 0 && outgoing.length > 0) {
+                                const inc = incoming[0];
+                                const out = outgoing[0];
+                                
+                                connection.query(
+                                    "INSERT INTO commit_connections (project_id, from_commit_id, from_side, to_commit_id, to_side) VALUES (?, ?, ?, ?, ?)",
+                                    [inc.project_id, inc.from_commit_id, inc.from_side, out.to_commit_id, out.to_side], 
+                                    (err) => {
+                                        // Ignore errors like unique constraint violations
+                                        callback();
+                                    }
+                                );
+                            } else {
+                                callback();
+                            }
+                        };
+                        
+                        stitchConnections(() => {
+                            connection.query("DELETE FROM commits WHERE id = ?", [id], (err) => {
+                                if (err) return connection.rollback(() => { connection.release(); res.status(500).send(err); });
+                                
+                                connection.commit(err => {
+                                    if (err) return connection.rollback(() => { connection.release(); res.status(500).send(err); });
+                                    connection.release();
+                                    res.status(200).send({ message: "Commit deleted and connections stitched!" });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
     });
 };
 
 exports.saveSchema = (req, res) => {
     const { projectId, positions, connections } = req.body;
-    // positions: { [commitId]: { x, y } }
-    // connections: [{ fromId, fromSide, toId, toSide }]
 
-    db.beginTransaction((err) => {
+    db.getConnection((err, connection) => {
         if (err) return res.status(500).send(err);
 
-        // 1. Update positions
-        const updatePromises = Object.keys(positions || {}).map(id => {
-            return new Promise((resolve, reject) => {
-                const pos = positions[id];
-                if (id === 'principal') {
-                    db.query("UPDATE announcements SET pos_x=?, pos_y=? WHERE id=?", [pos.x, pos.y, projectId], (e) => e ? reject(e) : resolve());
-                } else {
-                    db.query("UPDATE commits SET pos_x=?, pos_y=? WHERE id=?", [pos.x, pos.y, id], (e) => e ? reject(e) : resolve());
-                }
+        connection.beginTransaction((err) => {
+            if (err) {
+                connection.release();
+                return res.status(500).send(err);
+            }
+
+            // 1. Update positions
+            const updatePromises = Object.keys(positions || {}).map(id => {
+                return new Promise((resolve, reject) => {
+                    const pos = positions[id];
+                    if (id === 'principal') {
+                        connection.query("UPDATE announcements SET pos_x=?, pos_y=? WHERE id=?", [pos.x, pos.y, projectId], (e) => e ? reject(e) : resolve());
+                    } else {
+                        connection.query("UPDATE commits SET pos_x=?, pos_y=? WHERE id=?", [pos.x, pos.y, id], (e) => e ? reject(e) : resolve());
+                    }
+                });
             });
-        });
 
-        // 2. Clear existing connections
-        const clearConnections = new Promise((resolve, reject) => {
-            db.query("DELETE FROM commit_connections WHERE project_id = ?", [projectId], (e) => e ? reject(e) : resolve());
-        });
+            // 2. Clear existing connections
+            const clearConnections = new Promise((resolve, reject) => {
+                connection.query("DELETE FROM commit_connections WHERE project_id = ?", [projectId], (e) => e ? reject(e) : resolve());
+            });
 
-        Promise.all([...updatePromises, clearConnections])
-            .then(() => {
-                if (connections && connections.length > 0) {
-                    const values = connections.map(c => [projectId, c.fromId, c.fromSide, c.toId, c.toSide]);
-                    db.query("INSERT INTO commit_connections (project_id, from_commit_id, from_side, to_commit_id, to_side) VALUES ?", [values], (e) => {
-                        if (e) return db.rollback(() => { res.status(500).send(e); });
-                        db.commit((err) => {
-                            if (err) return db.rollback(() => { res.status(500).send(err); });
+            Promise.all([...updatePromises, clearConnections])
+                .then(() => {
+                    if (connections && connections.length > 0) {
+                        const values = connections.map(c => [projectId, c.fromId, c.fromSide, c.toId, c.toSide]);
+                        connection.query("INSERT INTO commit_connections (project_id, from_commit_id, from_side, to_commit_id, to_side) VALUES ?", [values], (e) => {
+                            if (e) return connection.rollback(() => { 
+                                connection.release();
+                                res.status(500).send(e); 
+                            });
+                            connection.commit((err) => {
+                                if (err) return connection.rollback(() => { 
+                                    connection.release();
+                                    res.status(500).send(err); 
+                                });
+                                connection.release();
+                                res.status(200).send({ message: "Schema saved!" });
+                            });
+                        });
+                    } else {
+                        connection.commit((err) => {
+                            if (err) return connection.rollback(() => { 
+                                connection.release();
+                                res.status(500).send(err); 
+                            });
+                            connection.release();
                             res.status(200).send({ message: "Schema saved!" });
                         });
+                    }
+                })
+                .catch(err => {
+                    connection.rollback(() => { 
+                        connection.release();
+                        res.status(500).send(err); 
                     });
-                } else {
-                    db.commit((err) => {
-                        if (err) return db.rollback(() => { res.status(500).send(err); });
-                        res.status(200).send({ message: "Schema saved!" });
-                    });
-                }
-            })
-            .catch(err => {
-                db.rollback(() => { res.status(500).send(err); });
-            });
+                });
+        });
     });
 };
 
@@ -215,5 +290,23 @@ exports.getSchemaConnections = (req, res) => {
             toSide: r.to_side
         }));
         res.status(200).send(connections);
+    });
+};
+exports.getAllProjectCommits = (req, res) => {
+    const { projectId } = req.params;
+    const query = `
+        SELECT c.*, b.name as branch_name, b.type as branch_type, u.username, COALESCE(u.google_avatar, u.avatar) AS avatar, u.occupation 
+        FROM commits c 
+        JOIN branches b ON c.branch_id = b.id
+        LEFT JOIN users u ON c.user_id = u.id 
+        WHERE b.project_id = ? 
+        ORDER BY c.created_at DESC
+    `;
+    db.query(query, [projectId], (err, results) => {
+        if (err) {
+            console.error("GET ALL PROJECT COMMITS ERROR:", err);
+            return res.status(500).send(err);
+        }
+        res.status(200).send(results);
     });
 };
