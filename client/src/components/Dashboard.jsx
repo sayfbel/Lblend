@@ -20,6 +20,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+    const [customBreadcrumb, setCustomBreadcrumb] = useState(null);
     const user = AuthService.getCurrentUser() || { id: 0, username: 'Guest', occupation: 'Unspecified' };
 
     useEffect(() => {
@@ -136,7 +137,7 @@ const Dashboard = () => {
                 {!isMobile && (
                     <div style={{ position: 'sticky', top: 0, height: '100px', backgroundColor: 'rgba(252,252,252,0.8)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 50px', zIndex: 20 }}>
                         <div style={{ fontSize: '0.7rem', fontWeight: '900', letterSpacing: '2px', color: 'rgba(0,72,66,0.4)', textTransform: 'uppercase' }}>
-                            L'BLEND / {activeTab}
+                            {customBreadcrumb || `L'BLEND / ${activeTab}`}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
                             <NotificationDropdown user={user} />
@@ -158,7 +159,7 @@ const Dashboard = () => {
                 )}
 
                 <div style={{ padding: isMobile ? '30px 20px' : '0 50px 50px 50px' }}>
-                    <Outlet context={{ user }} />
+                    <Outlet context={{ user, setCustomBreadcrumb }} />
                 </div>
             </main>
         </div>

@@ -4,7 +4,7 @@ import { User, Briefcase, Mail, ShieldCheck, Save, RefreshCw, Camera, Upload, Im
 import { useOutletContext } from 'react-router-dom';
 
 const OCCUPATION_OPTIONS = [
-    "Developer", "Designer", "Manager", "Marketing Specialist", "Photographer", "Fashion Model", "Digital Stylist", "Artist", "Producer"
+    'Developer', 'Designer', 'Video Editor', 'Content Creator', 'student(bac)', 'Other'
 ];
 
 const Profile = () => {
@@ -79,13 +79,13 @@ const Profile = () => {
     };
 
     return (
-        <div className="animate-fade-in" style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
             <div style={{ marginBottom: '60px', textAlign: 'left' }}>
                 <h2 className="heading-xl">Mission <br /><span style={{ color: 'var(--accent-dark)' }}>Identity</span></h2>
                 <p style={{ color: 'var(--text-muted)', fontWeight: '600', marginTop: '15px' }}>Management and synchronization of your digital personnel record.</p>
             </div>
 
-            <div className="blend-card" style={{ padding: '60px', position: 'relative' }}>
+            <div style={{ padding: '40px 0', position: 'relative', background: 'transparent', border: 'none', boxShadow: 'none' }}>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '40px', marginBottom: '60px', paddingBottom: '40px', borderBottom: '1px solid #f1f5f9' }}>
                     <div
@@ -221,11 +221,22 @@ const Profile = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary"
-                            style={{ width: 'auto', padding: '1.2rem 4rem', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '15px' }}
+                            style={{ 
+                                background: 'var(--secondary)', 
+                                color: 'white', 
+                                padding: '12px 25px', 
+                                borderRadius: '12px', 
+                                border: 'none', 
+                                fontSize: '0.7rem', 
+                                fontWeight: '900', 
+                                cursor: 'pointer', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '10px' 
+                            }}
                         >
-                            {loading ? <RefreshCw size={20} className="animate-spin" /> : <Save size={20} />}
-                            {loading ? 'Synchronizing...' : 'Sync Identity'}
+                            {loading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                            {loading ? 'SYNCHRONIZING...' : 'SYNC IDENTITY'}
                         </button>
                     </div>
                 </form>

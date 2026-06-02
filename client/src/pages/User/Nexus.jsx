@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { User, Briefcase, GitBranch, ArrowLeft, ExternalLink, Globe, Search } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 
 const Nexus = () => {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const agentIdFromUrl = queryParams.get('id');
+    const { setCustomBreadcrumb } = useOutletContext() || {};
 
     const [agents, setAgents] = useState([]);
     const [selectedAgent, setSelectedAgent] = useState(null);
@@ -61,16 +62,29 @@ const Nexus = () => {
         a.occupation?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    useEffect(() => {
+        if (selectedAgent && setCustomBreadcrumb) {
+            setCustomBreadcrumb(
+                <span 
+                    onClick={() => setSelectedAgent(null)} 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary)' }}
+                >
+                    <ArrowLeft size={14} /> 
+                    <span>L'BLEND / NEXUS / <span style={{ color: 'var(--accent-dark)' }}>{selectedAgent.username}</span></span>
+                </span>
+            );
+        } else if (setCustomBreadcrumb) {
+            setCustomBreadcrumb(null);
+        }
+
+        return () => {
+            if (setCustomBreadcrumb) setCustomBreadcrumb(null);
+        };
+    }, [selectedAgent, setCustomBreadcrumb]);
+
     if (selectedAgent) {
         return (
             <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
-                <button 
-                    onClick={() => setSelectedAgent(null)}
-                    style={{ marginBottom: isMobile ? '30px' : '50px', display: 'flex', alignItems: 'center', gap: '15px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.75rem', letterSpacing: '1.5px', cursor: 'pointer', padding: 0 }}
-                >
-                    <ArrowLeft size={16} /> BACK TO DIRECTORY
-                </button>
-
                 <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: isMobile ? '1fr' : 'minmax(350px, 1fr) 2fr', 
@@ -183,36 +197,38 @@ const Nexus = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(calc(min(100%, 400px)), 1fr))', gap: '25px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(calc(min(100%, 280px)), 1fr))', gap: '25px' }}>
                 {filteredAgents.map(agent => (
                     <div 
                         key={agent.id} 
                         onClick={() => handleSelectAgent(agent)}
                         className="blend-card"
                         style={{ 
-                            padding: '30px', 
+                            padding: '25px', 
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
-                            alignItems: 'center',
-                            textAlign: 'center',
-                            gap: '20px',
-                            transition: 'all 0.4s'
+                            alignItems: 'flex-start',
+                            textAlign: 'left',
+                            gap: '15px',
+                            transition: 'all 0.4s',
+                            position: 'relative'
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = 'var(--shadow-deep)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-soft)'; e.currentTarget.style.borderColor = 'transparent'; }}
                     >
-                        <div style={{ width: '90px', height: '90px', borderRadius: '28px', overflow: 'hidden', border: '4px solid #f8fafc', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-                            {agent.avatar ? <img src={agent.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ background: 'var(--secondary)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '1.8rem' }}>{agent.username[0]}</div>}
+                        <div style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: '32px', overflow: 'hidden', border: '4px solid #f8fafc', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', marginBottom: '10px' }}>
+                            {agent.avatar ? <img src={agent.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ background: 'var(--secondary)', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '3rem' }}>{agent.username[0]}</div>}
                         </div>
                         
-                        <div>
-                            <h4 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.4rem', fontWeight: '700', color: 'var(--secondary)', margin: '0 0 5px 0', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>{agent.username}</h4>
-                            <p style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent-dark)', margin: 0, textTransform: 'uppercase', letterSpacing: '1.5px', opacity: 0.8 }}>{agent.occupation}</p>
+                        <div style={{ width: '100%' }}>
+                            <h4 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.4rem', fontWeight: '800', color: 'var(--secondary)', margin: '0 0 5px 0', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>{agent.username}</h4>
+                            <p style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--accent-dark)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>{agent.occupation || 'UNASSIGNED ROLE'}</p>
+                            <p style={{ fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', opacity: 0.6 }}>{agent.description || 'NO DESCRIPTION'}</p>
                         </div>
 
-                        <div style={{ marginLeft: 'auto', opacity: 0.1 }}>
-                            <ArrowLeft style={{ transform: 'rotate(180deg)' }} size={24} />
+                        <div style={{ position: 'absolute', bottom: '25px', right: '25px', opacity: 0.15 }}>
+                            <ArrowLeft style={{ transform: 'rotate(180deg)' }} size={20} />
                         </div>
                     </div>
                 ))}

@@ -78,7 +78,13 @@ passport.use(new GoogleStrategy({
     db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
         if (err) return done(err);
         if (results.length === 0) {
-            return done(null, false, { message: "Account does not exist. Please register first." });
+            return done(null, false, { 
+                action: 'register',
+                email: email,
+                google_id: google_id,
+                avatar: avatar,
+                username: profile.displayName || email.split('@')[0]
+            });
         }
         
         const user = results[0];
@@ -106,7 +112,18 @@ app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile',
 app.get('/api/auth/google/callback', (req, res, next) => {
     passport.authenticate('google', (err, user, info) => {
         if (err) return next(err);
-        if (!user) return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(info.message)}`);
+        if (!user) {
+            if (info && info.action === 'register') {
+                const token = jwt.sign({ 
+                    email: info.email, 
+                    google_id: info.google_id, 
+                    avatar: info.avatar,
+                    username: info.username
+                }, process.env.JWT_SECRET, { expiresIn: '15m' });
+                return res.redirect(`${process.env.FRONTEND_URL}/register?google_token=${token}`);
+            }
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(info.message || "Authentication failed")}`);
+        }
         
         req.logIn(user, (err) => {
             if (err) return next(err);
@@ -168,6 +185,30 @@ app.post('/api/register', async (req, res) => {
 
         res.status(201).send({ message: "Registration initiated! Check your Gmail for the 6-digit code." });
     });
+});
+
+// Complete Google Registration
+app.post('/api/register-google', async (req, res) => {
+    const { google_token, password, occupation } = req.body;
+    
+    try {
+        const decoded = jwt.verify(google_token, process.env.JWT_SECRET);
+        const { email, google_id, avatar, username } = decoded;
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        db.query("INSERT INTO users (username, email, password, role, occupation, google_id, avatar, google_avatar, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+        [username, email, hashedPassword, 'user', occupation, google_id, avatar, avatar, true], (err) => {
+            if (err) {
+                if (err.code === 'ER_DUP_ENTRY') return res.status(400).send({ message: "Email already exists" });
+                return res.status(500).send({ message: "Database error", details: err.message });
+            }
+            
+            res.status(201).send({ message: "Google Registration successful! You can now log in." });
+        });
+    } catch (error) {
+        return res.status(400).send({ message: "Invalid or expired Google registration session." });
+    }
 });
 
 // Resend Verification Code

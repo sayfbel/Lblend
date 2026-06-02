@@ -11,6 +11,7 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [occupation, setOccupation] = useState('Developer');
     const [verificationCode, setVerificationCode] = useState('');
+    const [googleToken, setGoogleToken] = useState(null);
     
     const [step, setStep] = useState(1);
     const [message, setMessage] = useState('');
@@ -27,20 +28,37 @@ const Register = () => {
                 setEmail(location.state.email);
             }
         }
+        
+        const params = new URLSearchParams(location.search);
+        const gToken = params.get('google_token');
+        if (gToken) {
+            setGoogleToken(gToken);
+        }
     }, [location]);
 
-    const occupationOptions = ['Developer', 'Designer', 'Video Editor', 'Content Creator', 'Other'];
+    const occupationOptions = ['Developer', 'Designer', 'Video Editor', 'Content Creator', 'student(bac)', 'Other'];
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setMessage('');
         setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/register', {
-                username, email, password, occupation
-            });
-            setMessage("Code sent! Check your Gmail.");
-            setStep(2);
+            if (googleToken) {
+                const response = await axios.post('http://localhost:5000/api/register-google', {
+                    google_token: googleToken,
+                    password,
+                    occupation
+                });
+                setMessage(response.data.message);
+                setSuccessful(true);
+                setTimeout(() => navigate('/login'), 2000);
+            } else {
+                await axios.post('http://localhost:5000/api/register', {
+                    username, email, password, occupation
+                });
+                setMessage("Code sent! Check your Gmail.");
+                setStep(2);
+            }
             setLoading(false);
         } catch (error) {
             const resMessage = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
@@ -139,14 +157,26 @@ const Register = () => {
 
                     {step === 1 ? (
                         <form onSubmit={handleRegister}>
-                            <div className="input-group" style={{ marginBottom: '0.8rem' }}>
-                                <label style={{ marginBottom: '0.4rem', fontSize: '0.75rem' }}><User size={12}/> Profile Name</label>
-                                <input type="text" placeholder="John Doe" value={username} onChange={(e) => setUsername(e.target.value)} required style={{ padding: '0.8rem' }} />
-                            </div>
-                            <div className="input-group" style={{ marginBottom: '0.8rem' }}>
-                                <label style={{ marginBottom: '0.4rem', fontSize: '0.75rem' }}><Mail size={12}/> Email Hub</label>
-                                <input type="email" placeholder="name@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '0.8rem' }} />
-                            </div>
+                            {googleToken && (
+                                <div style={{ marginBottom: '1.2rem', padding: '10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, fontWeight: '600' }}>
+                                        Google Account detected. Please complete your profile by providing a Security Key and selecting your Mission Role.
+                                    </p>
+                                </div>
+                            )}
+
+                            {!googleToken && (
+                                <>
+                                    <div className="input-group" style={{ marginBottom: '0.8rem' }}>
+                                        <label style={{ marginBottom: '0.4rem', fontSize: '0.75rem' }}><User size={12}/> Profile Name</label>
+                                        <input type="text" placeholder="John Doe" value={username} onChange={(e) => setUsername(e.target.value)} required style={{ padding: '0.8rem' }} />
+                                    </div>
+                                    <div className="input-group" style={{ marginBottom: '0.8rem' }}>
+                                        <label style={{ marginBottom: '0.4rem', fontSize: '0.75rem' }}><Mail size={12}/> Email Hub</label>
+                                        <input type="email" placeholder="name@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '0.8rem' }} />
+                                    </div>
+                                </>
+                            )}
                             <div className="input-group" style={{ marginBottom: '1.2rem' }}>
                                 <label style={{ marginBottom: '0.4rem', fontSize: '0.75rem' }}><Lock size={12}/> Security Key</label>
                                 <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ padding: '0.8rem' }} />
@@ -165,6 +195,22 @@ const Register = () => {
                             <button className="btn-primary" style={{ width: '100%', marginBottom: '15px', padding: '1rem' }} disabled={loading}>
                                 {loading ? 'Initializing...' : 'Initiate Registration'}
                             </button>
+
+                            {!googleToken && (
+                                <button 
+                                    type="button"
+                                    onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+                                    style={{ background: '#ffffff', border: '1px solid var(--border)', color: 'var(--secondary)', padding: '0.8rem', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', fontSize: '0.85rem', fontWeight: '700' }}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M23.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.3h6.5c-.3 1.5-1.1 2.8-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.7z" fill="#4285F4"/>
+                                        <path d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3c-1.1.7-2.5 1.2-4 1.2-3.1 0-5.7-2.1-6.7-4.9H1.4v3.1C3.4 21.5 7.4 24 12 24z" fill="#34A853"/>
+                                        <path d="M5.3 14.4c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4V6.5H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.5l3.9-3.1z" fill="#FBBC05"/>
+                                        <path d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.1 15.2 0 12 0 7.4 0 3.4 2.5 1.4 6.5l3.9 3.1c1-2.8 3.6-4.8 6.7-4.8z" fill="#EA4335"/>
+                                    </svg>
+                                    Continue with Google
+                                </button>
+                            )}
                         </form>
                     ) : (
                         <form onSubmit={handleVerify}>

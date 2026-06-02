@@ -14,8 +14,10 @@ import {
     Users,
     ChevronRight,
     Terminal,
-    GitBranch
+    GitBranch,
+    ArrowLeft
 } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
 import ProjectWorkshop from './ProjectWorkshop';
 import { useToast } from '../../components/ToastProvider';
@@ -33,6 +35,7 @@ const Workspace = () => {
     const [loading, setLoading] = useState(true);
     const [selectedFile, setSelectedFile] = useState(null);
 
+    const { setCustomBreadcrumb } = useOutletContext() || {};
     const user = AuthService.getCurrentUser();
 
     const fetchManifest = async () => {
@@ -137,6 +140,26 @@ const Workspace = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        if (selectedProject && setCustomBreadcrumb) {
+            setCustomBreadcrumb(
+                <span 
+                    onClick={() => setSelectedProject(null)} 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary)' }}
+                >
+                    <ArrowLeft size={14} /> 
+                    <span>L'BLEND / PROJECTS / <span style={{ color: 'var(--accent-dark)' }}>{selectedProject.project_name}</span></span>
+                </span>
+            );
+        } else if (setCustomBreadcrumb) {
+            setCustomBreadcrumb(null);
+        }
+
+        return () => {
+            if (setCustomBreadcrumb) setCustomBreadcrumb(null);
+        };
+    }, [selectedProject, setCustomBreadcrumb]);
 
     if (selectedProject) return <ProjectWorkshop project={selectedProject} onBack={() => setSelectedProject(null)} />;
 

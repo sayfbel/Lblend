@@ -1134,10 +1134,6 @@ const ProjectWorkshop = ({ project, onBack }) => {
 
     return (
         <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
-            <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem', marginBottom: isMobile ? '25px' : '40px', letterSpacing: '1px' }}>
-                <ArrowLeft size={14} /> BACK TO MISSIONS
-            </button>
-
             <div style={{ marginBottom: isMobile ? '40px' : '60px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
                 <div>
                     <h2 className="heading-xl">{project.project_name}</h2>
@@ -1296,7 +1292,6 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
 
                                             {/* CONFIRMED LINK ICONS */}
                                             {!pendingSource && attachedLinks.map((link, i) => (
@@ -1421,7 +1416,7 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                                 </div>
                                             )}
 
-                                            <button onClick={handleAddCommit} className="btn-primary" style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <button onClick={handleAddCommit} disabled={loading || (!newCommitMsg && !commitFile) || !selectedBranch} className="btn-primary" style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px', opacity: !selectedBranch ? 0.5 : 1 }}>
                                                 <Send size={18} /> COMMIT
                                             </button>
                                         </div>
@@ -1435,30 +1430,12 @@ const ProjectWorkshop = ({ project, onBack }) => {
                                             }}
                                             style={{ display: 'none' }}
                                         />
-
-                                        <button
-                                            onClick={handleAddCommit}
-                                            disabled={loading || (!newCommitMsg && !commitFile) || !selectedBranch}
-                                            className="btn-primary"
-                                            style={{ padding: '0 30px', height: '55px', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '10px', opacity: !selectedBranch ? 0.5 : 1 }}
-                                        >
-                                            <Send size={18} /> COMMIT
-                                        </button>
                                     </div>
-
-                                    <input
-                                        id="commit-file-upload-design"
-                                        type="file"
-                                        accept={ALLOWED_FILE_TYPES}
-                                        onChange={(e) => { if (e.target.files?.[0]) setCommitFile(e.target.files[0]); }}
-                                        style={{ display: 'none' }}
-                                    />
-                                </div>
                             ) : (
                                 <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '100px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '800', fontSize: '0.65rem', border: '1px dashed var(--border)' }}>
                                     Read-Only: Only Designers can broadcast updates to the Hub.
                                 </div>
-                            )}
+                            ))}
                         </div>
 
                         <div style={{ position: 'relative', paddingBottom: '100px' }} ref={gridRef}>
