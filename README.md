@@ -4,7 +4,7 @@ The official full-stack authentication and operational hub for **L'blend**, feat
 
 ## 💡 Project Idea
 
-L'blend is envisioned as a secure, role-based, and highly aesthetic central hub for managing users, administrative tasks, and operational workflows. Built with modern web technologies, it provides a seamless authentication experience (including JWT and Google Login) coupled with a premium UI using glassmorphism. It serves both as a secure gateway and a functional dashboard, offering customized and personalized experiences for regular users and administrators.
+L'blend Premium Operations Platform is envisioned as a dedicated hub for the L'blend community to connect and collaborate. The platform empowers members—whether they are developers, designers, or filmmakers—to easily find each other and team up on creative projects. Inspired by the collaborative synergy of GitHub Workspaces, the platform is designed to foster cross-disciplinary partnerships, creative networking, and a deeply interconnected community.
 
 
 ## 🚀 Features
