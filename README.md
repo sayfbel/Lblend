@@ -4,7 +4,7 @@ The official full-stack authentication and operational hub for **L'blend**, feat
 
 ## 💡 Project Idea
 
-L'blend Premium Operations Platform is envisioned as a dedicated hub for the L'blend community to connect and collaborate. The platform empowers members—whether they are developers, designers, or filmmakers—to easily find each other and team up on creative projects. Inspired by the collaborative synergy of GitHub Workspaces, the platform is designed to foster cross-disciplinary partnerships, creative networking, and a deeply interconnected community.
+L'blend hub Platform is envisioned as a dedicated hub for the L'blend community to connect and collaborate. The platform empowers members—whether they are developers, designers, or filmmakers—to easily find each other and team up on creative projects. Inspired by the collaborative synergy of GitHub Workspaces, the platform is designed to foster cross-disciplinary partnerships, creative networking, and a deeply interconnected community.
 
 
 ## 🚀 Features
